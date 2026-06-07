@@ -594,20 +594,13 @@ function renderCalendar() {
   const gridEnd = new Date(gridStart);
   gridEnd.setDate(gridStart.getDate() + 42);
   const eventsByDate = new Map();
-  const rangeEvents = [];
-  const cells = [];
-  const dateKeyToIndex = new Map();
-  const visibleMonthEvents = state.events.filter((event) => {
-    const eventDate = parseDate(event.date);
-    return eventDate.getFullYear() === year && eventDate.getMonth() === month;
-  });
   const fragment = document.createDocumentFragment();
+  const cells = [];
 
   for (let i = 0; i < 42; i += 1) {
     const date = new Date(gridStart);
     date.setDate(gridStart.getDate() + i);
     const key = dateKey(date);
-    dateKeyToIndex.set(key, i);
 
     const cell = document.createElement("div");
     cell.className = "day-cell";
@@ -617,7 +610,7 @@ function renderCalendar() {
     if (date.getMonth() !== month) cell.classList.add("outside");
     if (key === dateKey(new Date())) cell.classList.add("today");
     cell.append(number);
-    cells.push(cell);
+    cells.push({ cell, key });
     fragment.append(cell);
   }
 
@@ -632,22 +625,14 @@ function renderCalendar() {
       !Number.isNaN(end.getTime()) &&
       end >= start
     ) {
-      const spanStart = new Date(Math.max(start.getTime(), gridStart.getTime()));
-      const spanEnd = new Date(Math.min(end.getTime(), gridEnd.getTime() - 24 * 60 * 60 * 1000));
-      if (spanEnd >= spanStart && !Number.isNaN(spanStart.getTime()) && !Number.isNaN(spanEnd.getTime())) {
-        let startIndex = dateKeyToIndex.get(dateKey(spanStart));
-        const endIndex = dateKeyToIndex.get(dateKey(spanEnd));
-        if (startIndex !== undefined && endIndex !== undefined) {
-          while (startIndex <= endIndex) {
-            const rowEndIndex = Math.min(endIndex, Math.floor(startIndex / 7) * 7 + 6);
-            rangeEvents.push({
-              event,
-              startIndex,
-              endIndex: rowEndIndex,
-            });
-            startIndex = rowEndIndex + 1;
-          }
+      const cursor = new Date(start);
+      while (cursor <= end) {
+        const key = dateKey(cursor);
+        if (cursor >= gridStart && cursor < gridEnd) {
+          if (!eventsByDate.has(key)) eventsByDate.set(key, []);
+          eventsByDate.get(key).push(event);
         }
+        cursor.setDate(cursor.getDate() + 1);
       }
       continue;
     }
@@ -656,12 +641,8 @@ function renderCalendar() {
     if (!eventsByDate.has(key)) eventsByDate.set(key, []);
     eventsByDate.get(key).push(event);
   }
-  els.calendarGrid.classList.toggle("single-event", visibleMonthEvents.length === 1);
-  for (let i = 0; i < 42; i += 1) {
-    const date = new Date(gridStart);
-    date.setDate(gridStart.getDate() + i);
-    const key = dateKey(date);
-    const cell = cells[i];
+
+  for (const { cell, key } of cells) {
     for (const event of (eventsByDate.get(key) || []).slice(0, 4)) {
       const chip = document.createElement("button");
       chip.className = "mini-event";
@@ -676,25 +657,6 @@ function renderCalendar() {
       chip.addEventListener("blur", hideHoverCard);
       cell.append(chip);
     }
-  }
-
-  for (const rangeEvent of rangeEvents) {
-    const chip = document.createElement("button");
-    const event = rangeEvent.event;
-    chip.className = "mini-event mini-event-range";
-    chip.type = "button";
-    chip.style.gridColumnStart = `${(rangeEvent.startIndex % 7) + 1}`;
-    chip.style.gridColumnEnd = `${((rangeEvent.endIndex % 7) + 2)}`;
-    chip.style.gridRow = `${Math.floor(rangeEvent.startIndex / 7) + 1}`;
-    chip.textContent = event.event_name;
-    chip.title = event.event_name;
-    chip.addEventListener("click", () => openEvent(event));
-    chip.addEventListener("mouseenter", () => showHoverCard(event, chip));
-    chip.addEventListener("mousemove", () => positionHoverCard(chip));
-    chip.addEventListener("mouseleave", hideHoverCard);
-    chip.addEventListener("focus", () => showHoverCard(event, chip));
-    chip.addEventListener("blur", hideHoverCard);
-    fragment.append(chip);
   }
 
   els.calendarGrid.append(fragment);

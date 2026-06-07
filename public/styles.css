@@ -461,28 +461,6 @@ h1 {
   white-space: nowrap;
 }
 
-.mini-event-range {
-  width: 100%;
-  margin-top: 2px;
-  margin-bottom: 2px;
-  grid-column: 1 / span 1;
-  border-left-width: 8px;
-  z-index: 2;
-}
-
-.calendar-grid.single-event .mini-event {
-  flex: 1 1 auto;
-  white-space: normal;
-  text-overflow: clip;
-  line-height: 1.35;
-  overflow: hidden;
-}
-
-.calendar-grid.single-event .day-cell {
-  display: flex;
-  flex-direction: column;
-}
-
 .hover-card {
   position: fixed;
   z-index: 30;
