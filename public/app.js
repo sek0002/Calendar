@@ -23,6 +23,8 @@ const state = {
   heroIndex: 0,
   heroTimer: null,
   activeHeroLayer: 0,
+  heroImageReady: false,
+  heroTransitionToken: 0,
 };
 
 const els = {
@@ -426,16 +428,42 @@ function setHeroLayer(layer, image, customImage) {
   layer.classList.toggle("default-image", !customImage);
 }
 
-function crossfadeHeroImage(image, customImage) {
+function preloadImage(src) {
+  return new Promise((resolve) => {
+    const image = new Image();
+    image.onload = () => resolve();
+    image.onerror = () => resolve();
+    image.src = src;
+    if (image.decode) {
+      image.decode().then(resolve).catch(resolve);
+    }
+  });
+}
+
+async function crossfadeHeroImage(image, customImage) {
+  const token = ++state.heroTransitionToken;
   const layers = [els.heroMedia, els.heroMediaNext];
   const nextIndex = state.activeHeroLayer === 0 ? 1 : 0;
   const currentLayer = layers[state.activeHeroLayer];
   const nextLayer = layers[nextIndex];
 
+  await preloadImage(image);
+  if (token !== state.heroTransitionToken) return;
+
+  if (!state.heroImageReady) {
+    setHeroLayer(currentLayer, image, customImage);
+    currentLayer.classList.add("active");
+    state.heroImageReady = true;
+    return;
+  }
+
   setHeroLayer(nextLayer, image, customImage);
-  nextLayer.classList.add("active");
-  currentLayer.classList.remove("active");
-  state.activeHeroLayer = nextIndex;
+  window.requestAnimationFrame(() => {
+    if (token !== state.heroTransitionToken) return;
+    nextLayer.classList.add("active");
+    currentLayer.classList.remove("active");
+    state.activeHeroLayer = nextIndex;
+  });
 }
 
 function openEvent(event) {

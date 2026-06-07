@@ -168,7 +168,8 @@ h1 {
   background-size: cover;
   opacity: 0;
   transform: scale(1.02);
-  transition: opacity 900ms ease, transform 1100ms ease;
+  will-change: opacity;
+  transition: opacity 1200ms ease-in-out;
 }
 
 .hero-media.active {
