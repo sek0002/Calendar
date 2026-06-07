@@ -184,6 +184,36 @@ function isCourseEvent(event) {
   return /\bcourses?\b/i.test(event.event_name || "");
 }
 
+function isPoolTrainingEvent(event) {
+  return /\bpool\b/i.test(event.event_name || "") && /\btraining\b/i.test(event.event_name || "");
+}
+
+function isShoreEvent(event) {
+  return /\bshore\b/i.test(event.event_name || "");
+}
+
+function isBoatEvent(event) {
+  return /\bboat\b/i.test(event.event_name || "");
+}
+
+function isExpressionOfInterestEvent(event) {
+  return /expressions?\s+of\s+interest/i.test(event.event_name || "");
+}
+
+function isCancelledEvent(event) {
+  return /\bcancel(le)?d\b/i.test(event.event_name || "");
+}
+
+function eventCategory(event) {
+  if (isCancelledEvent(event)) return "cancelled";
+  if (isClubMeeting(event)) return "club-meeting";
+  if (isPoolTrainingEvent(event)) return "pool-training";
+  if (isShoreEvent(event)) return "shore";
+  if (isCourseEvent(event)) return "course";
+  if (isBoatEvent(event)) return "boat";
+  return "default";
+}
+
 function isHiddenEvent(event) {
   const title = event.event_name || "";
   return HIDDEN_EVENT_TITLES.has(title) || HIDDEN_TITLE_PATTERNS.some((pattern) => pattern.test(title));
@@ -559,9 +589,10 @@ function renderEventList() {
   }
   const fragment = document.createDocumentFragment();
   for (const event of events) {
+    const category = eventCategory(event);
     const card = document.createElement("button");
     card.type = "button";
-    card.className = "event-card";
+    card.className = `event-card event-card-${category}`;
     const image = eventImage(event);
     const img = document.createElement("img");
     img.src = image;
@@ -594,6 +625,8 @@ function renderCalendar() {
   const gridEnd = new Date(gridStart);
   gridEnd.setDate(gridStart.getDate() + 42);
   const eventsByDate = new Map();
+  const rangeEvents = [];
+  const dateKeyToIndex = new Map();
   const fragment = document.createDocumentFragment();
   const cells = [];
 
@@ -604,12 +637,15 @@ function renderCalendar() {
 
     const cell = document.createElement("div");
     cell.className = "day-cell";
+    cell.style.gridColumn = `${(i % 7) + 1} / ${(i % 7) + 2}`;
+    cell.style.gridRow = `${Math.floor(i / 7) + 1}`;
     const number = document.createElement("span");
     number.className = "day-number";
     number.textContent = String(date.getDate());
     if (date.getMonth() !== month) cell.classList.add("outside");
     if (key === dateKey(new Date())) cell.classList.add("today");
     cell.append(number);
+    dateKeyToIndex.set(key, i);
     cells.push({ cell, key });
     fragment.append(cell);
   }
@@ -617,22 +653,34 @@ function renderCalendar() {
   for (const event of state.events) {
     const start = parseDate(event.start_date || event.date);
     const end = parseDate(event.end_date || event.date);
-    if (
+    const isMultiDayRange =
       !isCourseEvent(event) &&
       event.start_date &&
       event.end_date &&
       !Number.isNaN(start.getTime()) &&
       !Number.isNaN(end.getTime()) &&
-      end >= start
-    ) {
-      const cursor = new Date(start);
-      while (cursor <= end) {
-        const key = dateKey(cursor);
-        if (cursor >= gridStart && cursor < gridEnd) {
-          if (!eventsByDate.has(key)) eventsByDate.set(key, []);
-          eventsByDate.get(key).push(event);
+      end >= start;
+
+    if (isMultiDayRange) {
+      if (isExpressionOfInterestEvent(event)) {
+        continue;
+      }
+      const clampedStart = new Date(Math.max(start.getTime(), gridStart.getTime()));
+      const clampedEnd = new Date(Math.min(end.getTime(), gridEnd.getTime() - 24 * 60 * 60 * 1000));
+      if (clampedEnd >= clampedStart && !Number.isNaN(clampedStart.getTime()) && !Number.isNaN(clampedEnd.getTime())) {
+        let startIndex = dateKeyToIndex.get(dateKey(clampedStart));
+        const endIndex = dateKeyToIndex.get(dateKey(clampedEnd));
+        if (startIndex !== undefined && endIndex !== undefined) {
+          while (startIndex <= endIndex) {
+            const rowEndIndex = Math.min(endIndex, Math.floor(startIndex / 7) * 7 + 6);
+            rangeEvents.push({
+              event,
+              startIndex,
+              endIndex: rowEndIndex,
+            });
+            startIndex = rowEndIndex + 1;
+          }
         }
-        cursor.setDate(cursor.getDate() + 1);
       }
       continue;
     }
@@ -644,8 +692,17 @@ function renderCalendar() {
 
   for (const { cell, key } of cells) {
     for (const event of (eventsByDate.get(key) || []).slice(0, 4)) {
+      const category = eventCategory(event);
       const chip = document.createElement("button");
-      chip.className = "mini-event";
+      chip.className = `mini-event mini-event-${category}`;
+      chip.classList.toggle(
+        "is-multiday",
+        event.start_date &&
+          event.end_date &&
+          !Number.isNaN(parseDate(event.start_date).getTime()) &&
+          !Number.isNaN(parseDate(event.end_date).getTime()) &&
+          parseDate(event.end_date) > parseDate(event.start_date),
+      );
       chip.type = "button";
       chip.textContent = event.event_name;
       chip.title = event.event_name;
@@ -657,6 +714,26 @@ function renderCalendar() {
       chip.addEventListener("blur", hideHoverCard);
       cell.append(chip);
     }
+  }
+
+  for (const rangeEvent of rangeEvents) {
+    const chip = document.createElement("button");
+    const event = rangeEvent.event;
+    const category = eventCategory(event);
+    chip.className = `mini-event mini-event-spanning mini-event-${category}`;
+    chip.classList.add("is-multiday");
+    chip.type = "button";
+    chip.style.gridColumn = `${(rangeEvent.startIndex % 7) + 1} / span ${(rangeEvent.endIndex - rangeEvent.startIndex) + 1}`;
+    chip.style.gridRow = `${Math.floor(rangeEvent.startIndex / 7) + 1}`;
+    chip.textContent = event.event_name;
+    chip.title = event.event_name;
+    chip.addEventListener("click", () => openEvent(event));
+    chip.addEventListener("mouseenter", () => showHoverCard(event, chip));
+    chip.addEventListener("mousemove", () => positionHoverCard(chip));
+    chip.addEventListener("mouseleave", hideHoverCard);
+    chip.addEventListener("focus", () => showHoverCard(event, chip));
+    chip.addEventListener("blur", hideHoverCard);
+    fragment.append(chip);
   }
 
   els.calendarGrid.append(fragment);
