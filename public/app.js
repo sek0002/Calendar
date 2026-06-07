@@ -626,6 +626,7 @@ function renderCalendar() {
   gridEnd.setDate(gridStart.getDate() + 42);
   const eventsByDate = new Map();
   const rangeEvents = [];
+  const ghostSlotsByIndex = new Map();
   const dateKeyToIndex = new Map();
   const fragment = document.createDocumentFragment();
   const cells = [];
@@ -648,7 +649,7 @@ function renderCalendar() {
     if (key === dateKey(new Date())) cell.classList.add("today");
     cell.append(number, eventStack);
     dateKeyToIndex.set(key, i);
-    cells.push({ eventStack, key });
+    cells.push({ eventStack, key, index: i });
     fragment.append(cell);
   }
 
@@ -701,25 +702,69 @@ function renderCalendar() {
       : a.rowIndex - b.rowIndex,
   );
 
-  const laneState = new Map();
+  const laneStateByDay = new Map();
   for (const rangeEvent of sortedRangeEvents) {
-    const rowKey = rangeEvent.rowIndex;
-    if (!laneState.has(rowKey)) {
-      laneState.set(rowKey, []);
-    }
-    const lanes = laneState.get(rowKey);
     let lane = 0;
-    while (lane < lanes.length && rangeEvent.startCol <= lanes[lane]) lane += 1;
-    if (lane === lanes.length) {
-      lanes.push(rangeEvent.endCol);
-    } else {
-      lanes[lane] = rangeEvent.endCol;
+    while (true) {
+      let blocked = false;
+      for (let index = rangeEvent.startIndex; index <= rangeEvent.endIndex; index += 1) {
+        const laneState = laneStateByDay.get(index);
+        if (laneState && laneState.has(lane)) {
+          blocked = true;
+          break;
+        }
+      }
+      if (!blocked) break;
+      lane += 1;
+    }
+    for (let index = rangeEvent.startIndex; index <= rangeEvent.endIndex; index += 1) {
+      let laneState = laneStateByDay.get(index);
+      if (!laneState) {
+        laneState = new Set();
+        laneStateByDay.set(index, laneState);
+      }
+      laneState.add(lane);
+      const ghostSlots = ghostSlotsByIndex.get(index) || [];
+      ghostSlots.push({
+        lane,
+        eventName: rangeEvent.event.event_name,
+      });
+      ghostSlotsByIndex.set(index, ghostSlots);
     }
     rangeEvent.lane = lane;
   }
 
-  for (const { eventStack, key } of cells) {
+  for (const { eventStack, key, index } of cells) {
+    const dayGhostSlots = ghostSlotsByIndex.get(index) || [];
+    const ghostLaneSet = new Set(dayGhostSlots.map((slot) => slot.lane));
+    const eventByLane = new Map();
     for (const event of (eventsByDate.get(key) || []).slice(0, 4)) {
+      let lane = 0;
+      while (ghostLaneSet.has(lane) || eventByLane.has(lane)) {
+        lane += 1;
+      }
+      eventByLane.set(lane, event);
+    }
+
+    const laneCount = Math.max(
+      dayGhostSlots.length ? Math.max(...dayGhostSlots.map((slot) => slot.lane)) + 1 : 0,
+      eventByLane.size ? Math.max(...eventByLane.keys()) + 1 : 0,
+    );
+
+    for (let lane = 0; lane < laneCount; lane += 1) {
+      if (ghostLaneSet.has(lane)) {
+        const ghost = document.createElement("span");
+        const slot = dayGhostSlots.find((item) => item.lane === lane);
+        ghost.className = "mini-event mini-event-ghost";
+        ghost.textContent = slot ? slot.eventName : "";
+        ghost.title = slot ? slot.eventName : "";
+        ghost.setAttribute("aria-hidden", "true");
+        ghost.tabIndex = -1;
+        eventStack.append(ghost);
+      }
+
+      const event = eventByLane.get(lane);
+      if (!event) continue;
       const category = eventCategory(event);
       const chip = document.createElement("button");
       chip.className = `mini-event mini-event-${category}`;
