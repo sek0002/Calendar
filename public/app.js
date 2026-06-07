@@ -122,8 +122,10 @@ function fmtTime(value) {
 
 function eventDateLabel(event) {
   const date = fmtDate(parseDate(event.date));
+  const endDateValue = event.end_date || event.start_date;
+  const endDate = endDateValue && endDateValue !== event.date ? ` - ${fmtDate(parseDate(endDateValue))}` : "";
   const time = fmtTime(event.start_time);
-  return time ? `${date}, ${time}` : date;
+  return `${date}${endDate}${time ? `, ${time}` : ""}`;
 }
 
 function monthKey(date) {
