@@ -403,7 +403,7 @@ function renderHero() {
     const event = sideEvents[index];
     const button = document.createElement("button");
     button.type = "button";
-    button.className = "hero-event";
+    button.className = `hero-event${index === state.heroIndex ? " is-active" : ""}`;
     const date = document.createElement("span");
     date.textContent = eventDateLabel(event);
     const title = document.createElement("strong");

@@ -352,6 +352,12 @@ h1 {
   background: rgba(255, 255, 255, 0.2);
 }
 
+.hero-event.is-active {
+  border-color: #9be1da;
+  box-shadow: 0 0 0 1px rgba(155, 225, 218, 0.55) inset;
+  background: rgba(255, 255, 255, 0.23);
+}
+
 .hero-event span {
   color: #9be1da;
   font-size: 0.78rem;
