@@ -90,6 +90,18 @@ h1 {
   line-height: 0.95;
 }
 
+.site-title {
+  display: flex;
+  align-items: baseline;
+  white-space: nowrap;
+}
+
+.site-title span {
+  color: var(--accent-dark);
+  font-size: 0.5em;
+  font-weight: 800;
+}
+
 .controls,
 .toolbar {
   display: flex;
@@ -125,12 +137,12 @@ h1 {
 
 .hero-banner {
   position: relative;
-  min-height: clamp(360px, 54vh, 560px);
+  min-height: clamp(310px, 46vh, 490px);
   display: grid;
   grid-template-columns: minmax(0, 1fr) 18px minmax(300px, 420px);
   align-items: end;
   gap: 28px;
-  padding: clamp(26px, 5vw, 56px) clamp(16px, 4vw, 48px);
+  padding: clamp(22px, 4vw, 46px) clamp(16px, 4vw, 48px);
   overflow: hidden;
   isolation: isolate;
   background:
