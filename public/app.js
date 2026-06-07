@@ -5,7 +5,7 @@ const HERO_INTERVAL_MS = 20000;
 const HERO_EVENT_LIMIT = 5;
 const THEME_STORAGE_KEY = "muuc-calendar-theme";
 const HIDDEN_EVENT_TITLES = new Set(["Computer Nitrox Course with Instructor Minh"]);
-const HIDDEN_TITLE_PATTERNS = [/^committee meeting$/i, /expiry/i];
+const HIDDEN_TITLE_PATTERNS = [/^committee meeting$/i, /expiry/i, /\btemplate\b/i];
 const DEFAULT_CLUB_MEETING = {
   event_name: "Club Meeting",
   start_time: "19:00",
@@ -185,7 +185,8 @@ function isCourseEvent(event) {
 }
 
 function isHiddenEvent(event) {
-  return HIDDEN_EVENT_TITLES.has(event.event_name) || HIDDEN_TITLE_PATTERNS.some((pattern) => pattern.test(event.event_name));
+  const title = event.event_name || "";
+  return HIDDEN_EVENT_TITLES.has(title) || HIDDEN_TITLE_PATTERNS.some((pattern) => pattern.test(title));
 }
 
 function addDefaultClubMeetings(events, startYear) {
@@ -590,21 +591,63 @@ function renderCalendar() {
   const first = new Date(year, month, 1);
   const startOffset = (first.getDay() + 6) % 7;
   const gridStart = new Date(year, month, 1 - startOffset);
+  const gridEnd = new Date(gridStart);
+  gridEnd.setDate(gridStart.getDate() + 42);
   const eventsByDate = new Map();
+  const rangeEvents = [];
+  const cells = [];
+  const dateKeyToIndex = new Map();
   const visibleMonthEvents = state.events.filter((event) => {
     const eventDate = parseDate(event.date);
     return eventDate.getFullYear() === year && eventDate.getMonth() === month;
   });
+  const fragment = document.createDocumentFragment();
+
+  for (let i = 0; i < 42; i += 1) {
+    const date = new Date(gridStart);
+    date.setDate(gridStart.getDate() + i);
+    const key = dateKey(date);
+    dateKeyToIndex.set(key, i);
+
+    const cell = document.createElement("div");
+    cell.className = "day-cell";
+    const number = document.createElement("span");
+    number.className = "day-number";
+    number.textContent = String(date.getDate());
+    if (date.getMonth() !== month) cell.classList.add("outside");
+    if (key === dateKey(new Date())) cell.classList.add("today");
+    cell.append(number);
+    cells.push(cell);
+    fragment.append(cell);
+  }
+
   for (const event of state.events) {
     const start = parseDate(event.start_date || event.date);
     const end = parseDate(event.end_date || event.date);
-    if (!isCourseEvent(event) && event.start_date && event.end_date && !Number.isNaN(start.getTime()) && !Number.isNaN(end.getTime()) && end >= start) {
-      const cursor = new Date(start);
-      while (cursor <= end) {
-        const key = dateKey(cursor);
-        if (!eventsByDate.has(key)) eventsByDate.set(key, []);
-        eventsByDate.get(key).push(event);
-        cursor.setDate(cursor.getDate() + 1);
+    if (
+      !isCourseEvent(event) &&
+      event.start_date &&
+      event.end_date &&
+      !Number.isNaN(start.getTime()) &&
+      !Number.isNaN(end.getTime()) &&
+      end >= start
+    ) {
+      const spanStart = new Date(Math.max(start.getTime(), gridStart.getTime()));
+      const spanEnd = new Date(Math.min(end.getTime(), gridEnd.getTime() - 24 * 60 * 60 * 1000));
+      if (spanEnd >= spanStart && !Number.isNaN(spanStart.getTime()) && !Number.isNaN(spanEnd.getTime())) {
+        let startIndex = dateKeyToIndex.get(dateKey(spanStart));
+        const endIndex = dateKeyToIndex.get(dateKey(spanEnd));
+        if (startIndex !== undefined && endIndex !== undefined) {
+          while (startIndex <= endIndex) {
+            const rowEndIndex = Math.min(endIndex, Math.floor(startIndex / 7) * 7 + 6);
+            rangeEvents.push({
+              event,
+              startIndex,
+              endIndex: rowEndIndex,
+            });
+            startIndex = rowEndIndex + 1;
+          }
+        }
       }
       continue;
     }
@@ -614,20 +657,11 @@ function renderCalendar() {
     eventsByDate.get(key).push(event);
   }
   els.calendarGrid.classList.toggle("single-event", visibleMonthEvents.length === 1);
-  const todayKey = dateKey(new Date());
-  const fragment = document.createDocumentFragment();
   for (let i = 0; i < 42; i += 1) {
     const date = new Date(gridStart);
     date.setDate(gridStart.getDate() + i);
     const key = dateKey(date);
-    const cell = document.createElement("div");
-    cell.className = "day-cell";
-    if (date.getMonth() !== month) cell.classList.add("outside");
-    if (key === todayKey) cell.classList.add("today");
-    const number = document.createElement("span");
-    number.className = "day-number";
-    number.textContent = String(date.getDate());
-    cell.append(number);
+    const cell = cells[i];
     for (const event of (eventsByDate.get(key) || []).slice(0, 4)) {
       const chip = document.createElement("button");
       chip.className = "mini-event";
@@ -642,8 +676,27 @@ function renderCalendar() {
       chip.addEventListener("blur", hideHoverCard);
       cell.append(chip);
     }
-    fragment.append(cell);
   }
+
+  for (const rangeEvent of rangeEvents) {
+    const chip = document.createElement("button");
+    const event = rangeEvent.event;
+    chip.className = "mini-event mini-event-range";
+    chip.type = "button";
+    chip.style.gridColumnStart = `${(rangeEvent.startIndex % 7) + 1}`;
+    chip.style.gridColumnEnd = `${((rangeEvent.endIndex % 7) + 2)}`;
+    chip.style.gridRow = `${Math.floor(rangeEvent.startIndex / 7) + 1}`;
+    chip.textContent = event.event_name;
+    chip.title = event.event_name;
+    chip.addEventListener("click", () => openEvent(event));
+    chip.addEventListener("mouseenter", () => showHoverCard(event, chip));
+    chip.addEventListener("mousemove", () => positionHoverCard(chip));
+    chip.addEventListener("mouseleave", hideHoverCard);
+    chip.addEventListener("focus", () => showHoverCard(event, chip));
+    chip.addEventListener("blur", hideHoverCard);
+    fragment.append(chip);
+  }
+
   els.calendarGrid.append(fragment);
 }
 
