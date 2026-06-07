@@ -1,0 +1,6 @@
+calendar.db
+cron.log
+.env
+events.csv
+__pycache__/
+*.pyc
