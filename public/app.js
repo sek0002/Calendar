@@ -481,6 +481,7 @@ function openEvent(event) {
   els.dialogImage.classList.toggle("default-image", !hasCustomImage(event));
   els.dialogImage.style.display = "block";
   els.dialog.showModal();
+  els.dialog.scrollTop = 0;
 }
 
 function hideHoverCard() {
