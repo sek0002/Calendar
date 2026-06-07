@@ -3,6 +3,7 @@
   --bg: #f6f7f4;
   --panel: #ffffff;
   --ink: #1f2933;
+  --calendar-text: #111827;
   --muted: #66737f;
   --line: #d9dfd7;
   --accent: #087f8c;
@@ -11,7 +12,8 @@
   --header-bg: rgba(255, 255, 255, 0.72);
   --day-bg: rgba(255, 255, 255, 0.55);
   --outside-day-bg: rgba(255, 255, 255, 0.22);
-  --chip-bg: #e9f4f2;
+  --chip-bg: #dff3ef;
+  --chip-text: #111827;
   --image-bg: #dfe7e3;
   --preview-bg: rgba(255, 255, 255, 0.96);
   --dialog-backdrop: rgba(21, 30, 37, 0.45);
@@ -23,6 +25,7 @@ html[data-theme="dark"] {
   --bg: #000b1f;
   --panel: #07152b;
   --ink: #eef6ff;
+  --calendar-text: #eef6ff;
   --muted: #9aabc2;
   --line: rgba(150, 176, 210, 0.24);
   --accent: #35c2d0;
@@ -32,6 +35,7 @@ html[data-theme="dark"] {
   --day-bg: rgba(10, 29, 56, 0.72);
   --outside-day-bg: rgba(8, 22, 45, 0.42);
   --chip-bg: rgba(53, 194, 208, 0.18);
+  --chip-text: #eef6ff;
   --image-bg: #061226;
   --preview-bg: rgba(7, 21, 43, 0.97);
   --dialog-backdrop: rgba(0, 5, 15, 0.72);
@@ -396,7 +400,7 @@ h1 {
 }
 
 .weekday-grid {
-  color: var(--muted);
+  color: var(--calendar-text);
   font-size: 0.76rem;
   font-weight: 800;
   text-transform: uppercase;
@@ -413,6 +417,7 @@ h1 {
 }
 
 .day-cell {
+  color: var(--calendar-text);
   min-height: 128px;
   border-right: 1px solid var(--line);
   border-bottom: 1px solid var(--line);
@@ -460,7 +465,8 @@ h1 {
   border-left: 4px solid var(--accent);
   border-radius: 4px;
   background: var(--chip-bg);
-  color: #ffffff;
+  color: var(--chip-text);
+  box-shadow: inset 0 0 0 1px rgba(7, 26, 36, 0.06);
   padding: 5px 7px;
   text-align: left;
   font-size: 0.78rem;
