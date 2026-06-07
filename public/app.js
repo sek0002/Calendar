@@ -348,15 +348,6 @@ function isPastEvent(event) {
   return parseDate(event.date) < today;
 }
 
-function heroSecondaryEvents(count = 4) {
-  if (!state.heroEvents.length) return [];
-  const events = [];
-  for (let offset = 1; offset <= Math.min(count, state.heroEvents.length - 1); offset += 1) {
-    events.push(state.heroEvents[(state.heroIndex + offset) % state.heroEvents.length]);
-  }
-  return events;
-}
-
 function setHeroIndex(index) {
   if (!state.heroEvents.length) return;
   state.heroIndex = (index + state.heroEvents.length) % state.heroEvents.length;
@@ -373,7 +364,7 @@ function restartHeroCycle() {
 
 function renderHero() {
   const featured = state.heroEvents[state.heroIndex] || null;
-  const secondary = heroSecondaryEvents(4);
+  const sideEvents = state.heroEvents.slice(0, HERO_EVENT_LIMIT);
   state.featuredEvent = featured || null;
   els.heroUpcoming.innerHTML = "";
   els.heroProgressDots.innerHTML = "";
@@ -408,7 +399,8 @@ function renderHero() {
   }
   els.heroProgressDots.append(dotFragment);
 
-  for (const event of secondary) {
+  for (let index = 0; index < sideEvents.length; index += 1) {
+    const event = sideEvents[index];
     const button = document.createElement("button");
     button.type = "button";
     button.className = "hero-event";
@@ -418,7 +410,6 @@ function renderHero() {
     title.textContent = event.event_name;
     button.append(date, title);
     button.addEventListener("click", () => {
-      const index = state.heroEvents.findIndex((candidate) => candidate.event_id === event.event_id);
       if (index >= 0) setHeroIndex(index);
       restartHeroCycle();
     });
