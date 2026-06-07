@@ -274,8 +274,7 @@ h1 {
 .hero-progress-track {
   position: relative;
   width: 4px;
-  min-height: 180px;
-  flex: 1;
+  height: 45px;
   overflow: hidden;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.28);
