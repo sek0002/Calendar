@@ -329,33 +329,40 @@ h1 {
 
 .hero-upcoming {
   display: grid;
-  gap: 10px;
+  gap: 0;
   align-self: stretch;
   align-content: end;
+  border: 1px solid rgba(255, 255, 255, 0.32);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.13);
+  overflow: hidden;
+  backdrop-filter: blur(12px);
 }
 
 .hero-event {
   display: grid;
   gap: 3px;
   width: 100%;
-  border: 1px solid rgba(255, 255, 255, 0.32);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.13);
+  border: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  background: transparent;
   color: white;
   padding: 12px;
   text-align: left;
   cursor: pointer;
-  backdrop-filter: blur(12px);
 }
 
 .hero-event:hover {
   background: rgba(255, 255, 255, 0.2);
 }
 
+.hero-event:last-child {
+  border-bottom: 0;
+}
+
 .hero-event.is-active {
-  border-color: #9be1da;
-  box-shadow: 0 0 0 1px rgba(155, 225, 218, 0.55) inset;
-  background: rgba(255, 255, 255, 0.23);
+  background: rgba(155, 225, 218, 0.18);
+  box-shadow: inset 4px 0 0 #9be1da;
 }
 
 .hero-event span {
