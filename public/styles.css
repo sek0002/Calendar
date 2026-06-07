@@ -469,9 +469,9 @@ h1 {
 }
 
 .mini-event.mini-event-club-meeting {
-  border-left-color: #0f766e;
-  background: #d9f7f3;
-  color: #0a4c4a;
+  border-left-color: #be185d;
+  background: #ffe4ef;
+  color: #9d174d;
 }
 
 .mini-event.mini-event-pool-training {
@@ -493,9 +493,9 @@ h1 {
 }
 
 .mini-event.mini-event-boat {
-  border-left-color: #0369a1;
-  background: #dbeafe;
-  color: #0c4a6e;
+  border-left-color: #0891b2;
+  background: #cffafe;
+  color: #0e7490;
 }
 
 .mini-event.mini-event-cancelled {
@@ -649,7 +649,7 @@ h1 {
 }
 
 .event-card.event-card-club-meeting {
-  border-left: 4px solid #0f766e;
+  border-left: 4px solid #be185d;
 }
 
 .event-card.event-card-pool-training {
@@ -665,7 +665,7 @@ h1 {
 }
 
 .event-card.event-card-boat {
-  border-left: 4px solid #0369a1;
+  border-left: 4px solid #0891b2;
 }
 
 .event-card.event-card-cancelled {
