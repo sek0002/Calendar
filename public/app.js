@@ -184,10 +184,6 @@ function isCourseEvent(event) {
   return /\bcourses?\b/i.test(event.event_name || "");
 }
 
-function isOpenWaterEvent(event) {
-  return /\[OW\]/i.test(event.event_name || "");
-}
-
 function isPoolTrainingEvent(event) {
   return /\bpool\b/i.test(event.event_name || "") && /\btraining\b/i.test(event.event_name || "");
 }
@@ -213,7 +209,6 @@ function eventCategory(event) {
   if (isClubMeeting(event)) return "club-meeting";
   if (isPoolTrainingEvent(event)) return "pool-training";
   if (isShoreEvent(event)) return "shore";
-  if (isOpenWaterEvent(event)) return "open-water";
   if (isCourseEvent(event)) return "course";
   if (isBoatEvent(event)) return "boat";
   return "default";

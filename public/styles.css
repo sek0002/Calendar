@@ -490,11 +490,7 @@ h1 {
 }
 
 .mini-event.mini-event-shore {
-  border-left-color: #5b21b6;
-}
-
-.mini-event.mini-event-open-water {
-  border-left-color: #eab308;
+  border-left-color: #db2777;
 }
 
 .mini-event.mini-event-course {
@@ -502,7 +498,7 @@ h1 {
 }
 
 .mini-event.mini-event-boat {
-  border-left-color: #0891b2;
+  border-left-color: #0284c7;
 }
 
 .mini-event.mini-event-cancelled {
@@ -679,11 +675,7 @@ h1 {
 }
 
 .event-card.event-card-shore {
-  border-left: 4px solid #5b21b6;
-}
-
-.event-card.event-card-open-water {
-  border-left: 4px solid #eab308;
+  border-left: 4px solid #db2777;
 }
 
 .event-card.event-card-course {
