@@ -648,6 +648,24 @@ dialog h2 {
   font-size: 1.7rem;
 }
 
+.teamapp-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 38px;
+  margin: 14px 24px 0;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel);
+  color: var(--accent-dark);
+  padding: 0 12px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.teamapp-link:hover {
+  border-color: var(--accent);
+}
+
 #dialogDescription {
   line-height: 1.55;
   padding-bottom: 24px;

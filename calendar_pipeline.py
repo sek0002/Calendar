@@ -429,6 +429,7 @@ def rows_to_events(rows: list[sqlite3.Row], include_images: bool) -> list[dict[s
             "description": row["description"],
             "description_sections": parse_description(row["description"] or ""),
             "source": row["source"],
+            "teamapp_url": f"https://muuc.teamapp.com/clubs/{CLUB_ID}/events/{row['event_id']}",
             "last_seen_at": row["last_seen_at"],
             "image_url": row["image_url"],
             "image_content_type": row["content_type"],

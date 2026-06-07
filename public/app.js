@@ -56,6 +56,7 @@ const els = {
   dialogImage: document.querySelector("#dialogImage"),
   dialogDate: document.querySelector("#dialogDate"),
   dialogTitle: document.querySelector("#dialogTitle"),
+  dialogTeamappLink: document.querySelector("#dialogTeamappLink"),
   dialogDescription: document.querySelector("#dialogDescription"),
   hoverCard: document.querySelector("#hoverCard"),
 };
@@ -261,6 +262,12 @@ function renderMonthOptions() {
 
 function eventImage(event) {
   return event.image_data_url || event.image_url || DEFAULT_EVENT_IMAGE;
+}
+
+function teamappUrl(event) {
+  if (event.teamapp_url) return event.teamapp_url;
+  if (String(event.event_id).startsWith("default-")) return "";
+  return `https://muuc.teamapp.com/clubs/132307/events/${event.event_id}`;
 }
 
 function hasCustomImage(event) {
@@ -474,6 +481,14 @@ async function crossfadeHeroImage(image, customImage) {
 function openEvent(event) {
   els.dialogDate.textContent = eventDateLabel(event);
   els.dialogTitle.textContent = event.event_name;
+  const url = teamappUrl(event);
+  if (url) {
+    els.dialogTeamappLink.href = url;
+    els.dialogTeamappLink.style.display = "inline-flex";
+  } else {
+    els.dialogTeamappLink.removeAttribute("href");
+    els.dialogTeamappLink.style.display = "none";
+  }
   renderStructuredDescription(els.dialogDescription, event);
   const image = eventImage(event);
   els.dialogImage.src = image;
