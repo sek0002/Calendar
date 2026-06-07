@@ -1,8 +1,8 @@
 {
-  "generated_at": "2026-06-07T11:14:32+00:00",
+  "generated_at": "2026-06-07T11:20:05+00:00",
   "start_year": 2026,
   "starts_on_or_after": "2026-01-01",
-  "count": 139,
+  "count": 135,
   "events": [
     {
       "event_id": 30225011,
@@ -7064,56 +7064,6 @@
       "has_image_blob": false
     },
     {
-      "event_id": 26305378,
-      "event_name": "2 x handflare expiry",
-      "title": "2 x handflare expiry",
-      "date": "2026-12-21",
-      "start_date": "2026-12-21",
-      "end_date": "2026-12-21",
-      "start_time": "00:00",
-      "end_time": "23:59",
-      "description": "Replace",
-      "description_sections": [
-        {
-          "title": "Details",
-          "body": [
-            "Replace"
-          ],
-          "fields": []
-        }
-      ],
-      "source": "future_page_2",
-      "last_seen_at": "2026-06-07T11:14:24+00:00",
-      "image_url": null,
-      "image_content_type": null,
-      "has_image_blob": false
-    },
-    {
-      "event_id": 26305382,
-      "event_name": "2x orange handsmoke expiry",
-      "title": "2x orange handsmoke expiry",
-      "date": "2026-12-21",
-      "start_date": "2026-12-21",
-      "end_date": "2026-12-21",
-      "start_time": "00:00",
-      "end_time": "23:59",
-      "description": "Replace",
-      "description_sections": [
-        {
-          "title": "Details",
-          "body": [
-            "Replace"
-          ],
-          "fields": []
-        }
-      ],
-      "source": "future_page_2",
-      "last_seen_at": "2026-06-07T11:14:24+00:00",
-      "image_url": null,
-      "image_content_type": null,
-      "has_image_blob": false
-    },
-    {
       "event_id": 30785328,
       "event_name": "Computer Nitrox Course with Instructor Minh",
       "title": "Computer Nitrox Course with Instructor Minh",
@@ -7409,31 +7359,6 @@
       "has_image_blob": false
     },
     {
-      "event_id": 26305389,
-      "event_name": "Boat Oxygen expiry",
-      "title": "Boat Oxygen expiry",
-      "date": "2027-05-21",
-      "start_date": "2027-05-21",
-      "end_date": "2027-05-21",
-      "start_time": "00:00",
-      "end_time": "23:59",
-      "description": "Replace",
-      "description_sections": [
-        {
-          "title": "Details",
-          "body": [
-            "Replace"
-          ],
-          "fields": []
-        }
-      ],
-      "source": "future_page_3",
-      "last_seen_at": "2026-06-07T11:14:28+00:00",
-      "image_url": null,
-      "image_content_type": null,
-      "has_image_blob": false
-    },
-    {
       "event_id": 31458029,
       "event_name": "Committee Meeting",
       "title": "Committee Meeting",
@@ -7444,31 +7369,6 @@
       "end_time": "19:00",
       "description": "",
       "description_sections": [],
-      "source": "future_page_3",
-      "last_seen_at": "2026-06-07T11:14:28+00:00",
-      "image_url": null,
-      "image_content_type": null,
-      "has_image_blob": false
-    },
-    {
-      "event_id": 10118528,
-      "event_name": "Boat Epirb Expiry date",
-      "title": "Boat Epirb Expiry date",
-      "date": "2028-09-01",
-      "start_date": "2028-09-01",
-      "end_date": "2028-09-01",
-      "start_time": "12:00",
-      "end_time": "13:00",
-      "description": "Change the Epirb sn 1709488362",
-      "description_sections": [
-        {
-          "title": "Details",
-          "body": [
-            "Change the Epirb sn 1709488362"
-          ],
-          "fields": []
-        }
-      ],
       "source": "future_page_3",
       "last_seen_at": "2026-06-07T11:14:28+00:00",
       "image_url": null,
