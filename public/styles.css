@@ -493,8 +493,12 @@ h1 {
   border-left-color: #5b21b6;
 }
 
+.mini-event.mini-event-open-water {
+  border-left-color: #eab308;
+}
+
 .mini-event.mini-event-course {
-  border-left-color: #b45309;
+  border-left-color: #16a34a;
 }
 
 .mini-event.mini-event-boat {
@@ -678,8 +682,12 @@ h1 {
   border-left: 4px solid #5b21b6;
 }
 
+.event-card.event-card-open-water {
+  border-left: 4px solid #eab308;
+}
+
 .event-card.event-card-course {
-  border-left: 4px solid #b45309;
+  border-left: 4px solid #16a34a;
 }
 
 .event-card.event-card-boat {
