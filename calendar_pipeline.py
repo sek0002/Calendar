@@ -33,6 +33,7 @@ PAST_IMG_URL = "https://muuc.teamapp.com/events/past.json?_img_data=v1&page=1"
 FUTURE_CSV_URL = f"https://muuc.teamapp.com/clubs/{CLUB_ID}/events.json?_csv_data=v1"
 FUTURE_IMG_URL = f"https://muuc.teamapp.com/clubs/{CLUB_ID}/events.json?_img_data=v1"
 MAX_FUTURE_PAGES = 20
+EXCLUDED_TITLE_EXACT = {"committee meeting"}
 EXCLUDED_TITLE_SUBSTRINGS = ("expiry",)
 
 
@@ -441,8 +442,8 @@ def rows_to_events(rows: list[sqlite3.Row], include_images: bool) -> list[dict[s
 
 
 def is_excluded_title(title: str) -> bool:
-    lowered = title.lower()
-    return any(substring in lowered for substring in EXCLUDED_TITLE_SUBSTRINGS)
+    lowered = title.strip().lower()
+    return lowered in EXCLUDED_TITLE_EXACT or any(substring in lowered for substring in EXCLUDED_TITLE_SUBSTRINGS)
 
 
 def query_events(db_path: Path, start_year: int = DEFAULT_START_YEAR, include_images: bool = False) -> dict[str, Any]:
