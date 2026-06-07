@@ -639,14 +639,16 @@ function renderCalendar() {
     cell.className = "day-cell";
     cell.style.gridColumn = `${(i % 7) + 1} / ${(i % 7) + 2}`;
     cell.style.gridRow = `${Math.floor(i / 7) + 1}`;
+    const eventStack = document.createElement("div");
+    eventStack.className = "day-events";
     const number = document.createElement("span");
     number.className = "day-number";
     number.textContent = String(date.getDate());
     if (date.getMonth() !== month) cell.classList.add("outside");
     if (key === dateKey(new Date())) cell.classList.add("today");
-    cell.append(number);
+    cell.append(number, eventStack);
     dateKeyToIndex.set(key, i);
-    cells.push({ cell, key });
+    cells.push({ eventStack, key });
     fragment.append(cell);
   }
 
@@ -659,7 +661,7 @@ function renderCalendar() {
       event.end_date &&
       !Number.isNaN(start.getTime()) &&
       !Number.isNaN(end.getTime()) &&
-      end >= start;
+      end > start;
 
     if (isMultiDayRange) {
       if (isExpressionOfInterestEvent(event)) {
@@ -690,7 +692,7 @@ function renderCalendar() {
     eventsByDate.get(key).push(event);
   }
 
-  for (const { cell, key } of cells) {
+  for (const { eventStack, key } of cells) {
     for (const event of (eventsByDate.get(key) || []).slice(0, 4)) {
       const category = eventCategory(event);
       const chip = document.createElement("button");
@@ -712,7 +714,7 @@ function renderCalendar() {
       chip.addEventListener("mouseleave", hideHoverCard);
       chip.addEventListener("focus", () => showHoverCard(event, chip));
       chip.addEventListener("blur", hideHoverCard);
-      cell.append(chip);
+      eventStack.append(chip);
     }
   }
 
