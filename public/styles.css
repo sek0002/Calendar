@@ -464,49 +464,43 @@ h1 {
 
 .mini-event.is-multiday {
   border-left-color: #0d9488;
-  background: #e0f5f3;
-  color: #134e4a;
+  background: var(--chip-bg);
+  color: #ffffff;
   font-weight: 700;
 }
 
 .mini-event.mini-event-club-meeting {
   border-left-color: #be185d;
-  background: #ffe4ef;
-  color: #9d174d;
+  color: #ffffff;
 }
 
 .mini-event.mini-event-pool-training {
   border-left-color: #1d4ed8;
-  background: #dbeafe;
-  color: #1e3a8a;
+  color: #ffffff;
 }
 
 .mini-event.mini-event-shore {
   border-left-color: #5b21b6;
-  background: #ede9fe;
-  color: #4c1d95;
+  color: #ffffff;
 }
 
 .mini-event.mini-event-course {
   border-left-color: #b45309;
-  background: #fef3c7;
-  color: #7c2d12;
+  color: #ffffff;
 }
 
 .mini-event.mini-event-boat {
   border-left-color: #0891b2;
-  background: #cffafe;
-  color: #0e7490;
+  color: #ffffff;
 }
 
 .mini-event.mini-event-cancelled {
   border-left-color: #dc2626;
-  background: #fee2e2;
-  color: #7f1d1d;
+  color: #ffffff;
 }
 
 .mini-event.mini-event-spanning.mini-event-cancelled {
-  background: #ffd8d8;
+  background: var(--chip-bg);
 }
 
 .mini-event-spanning {
