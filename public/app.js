@@ -679,6 +679,9 @@ function renderCalendar() {
               event,
               startIndex,
               endIndex: rowEndIndex,
+              rowIndex: Math.floor(startIndex / 7) + 1,
+              startCol: (startIndex % 7) + 1,
+              endCol: (rowEndIndex % 7) + 1,
             });
             startIndex = rowEndIndex + 1;
           }
@@ -690,6 +693,29 @@ function renderCalendar() {
     const key = event.date || event.start_date;
     if (!eventsByDate.has(key)) eventsByDate.set(key, []);
     eventsByDate.get(key).push(event);
+  }
+
+  const sortedRangeEvents = rangeEvents.sort((a, b) =>
+    a.rowIndex === b.rowIndex
+      ? a.startCol - b.startCol || a.endCol - b.endCol || a.event.event_name.localeCompare(b.event.event_name)
+      : a.rowIndex - b.rowIndex,
+  );
+
+  const laneState = new Map();
+  for (const rangeEvent of sortedRangeEvents) {
+    const rowKey = rangeEvent.rowIndex;
+    if (!laneState.has(rowKey)) {
+      laneState.set(rowKey, []);
+    }
+    const lanes = laneState.get(rowKey);
+    let lane = 0;
+    while (lane < lanes.length && rangeEvent.startCol <= lanes[lane]) lane += 1;
+    if (lane === lanes.length) {
+      lanes.push(rangeEvent.endCol);
+    } else {
+      lanes[lane] = rangeEvent.endCol;
+    }
+    rangeEvent.lane = lane;
   }
 
   for (const { eventStack, key } of cells) {
@@ -718,7 +744,7 @@ function renderCalendar() {
     }
   }
 
-  for (const rangeEvent of rangeEvents) {
+  for (const rangeEvent of sortedRangeEvents) {
     const chip = document.createElement("button");
     const event = rangeEvent.event;
     const category = eventCategory(event);
@@ -727,6 +753,7 @@ function renderCalendar() {
     chip.type = "button";
     chip.style.gridColumn = `${(rangeEvent.startIndex % 7) + 1} / span ${(rangeEvent.endIndex - rangeEvent.startIndex) + 1}`;
     chip.style.gridRow = `${Math.floor(rangeEvent.startIndex / 7) + 1}`;
+    chip.style.setProperty("--event-lane", String(rangeEvent.lane || 0));
     chip.textContent = event.event_name;
     chip.title = event.event_name;
     chip.addEventListener("click", () => openEvent(event));

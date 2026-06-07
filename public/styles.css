@@ -514,15 +514,15 @@ h1 {
   position: relative;
   z-index: 2;
   width: 100%;
-  margin-top: 38px;
+  margin-top: calc(38px + (var(--event-lane, 0) * 34px));
   margin-bottom: 0;
   border-left-width: 4px;
   border-radius: 4px;
   padding: 5px 7px;
   line-height: 1.2;
   max-height: 2.1rem;
-  justify-self: stretch;
-  align-self: stretch;
+  justify-self: auto;
+  align-self: auto;
 }
 
 .hover-card {
