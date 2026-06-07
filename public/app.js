@@ -5,6 +5,7 @@ const HERO_INTERVAL_MS = 20000;
 const HERO_EVENT_LIMIT = 5;
 const THEME_STORAGE_KEY = "muuc-calendar-theme";
 const HIDDEN_EVENT_TITLES = new Set(["Computer Nitrox Course with Instructor Minh"]);
+const HIDDEN_TITLE_PATTERNS = [/^committee meeting$/i, /expiry/i];
 const DEFAULT_CLUB_MEETING = {
   event_name: "Club Meeting",
   start_time: "19:00",
@@ -174,6 +175,10 @@ function compareEventsForList(a, b) {
 
 function isClubMeeting(event) {
   return /^(weekly\s+)?club meeting\b/i.test(event.event_name);
+}
+
+function isHiddenEvent(event) {
+  return HIDDEN_EVENT_TITLES.has(event.event_name) || HIDDEN_TITLE_PATTERNS.some((pattern) => pattern.test(event.event_name));
 }
 
 function addDefaultClubMeetings(events, startYear) {
@@ -621,7 +626,7 @@ async function boot() {
     const startYear = Number(data.start_year) || 2026;
     state.events = addDefaultClubMeetings((data.events || [])
       .map((event) => ({ ...event, date: event.date || event.start_date }))
-      .filter((event) => !HIDDEN_EVENT_TITLES.has(event.event_name))
+      .filter((event) => !isHiddenEvent(event))
       .sort(byDate), startYear);
     state.heroEvents = allUpcomingEvents();
     state.heroIndex = 0;
