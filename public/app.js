@@ -547,7 +547,6 @@ function showHoverCard(event, anchor) {
 function renderEventList() {
   const events = filteredEvents();
   els.eventList.innerHTML = "";
-  els.eventList.classList.toggle("single-event", events.length === 1);
   els.status.textContent = `${events.length} event${events.length === 1 ? "" : "s"}`;
   if (!events.length) {
     els.status.textContent = "No events match the current filters.";
@@ -588,10 +587,15 @@ function renderCalendar() {
   const startOffset = (first.getDay() + 6) % 7;
   const gridStart = new Date(year, month, 1 - startOffset);
   const eventsByDate = new Map();
+  const visibleMonthEvents = state.events.filter((event) => {
+    const eventDate = parseDate(event.date);
+    return eventDate.getFullYear() === year && eventDate.getMonth() === month;
+  });
   for (const event of state.events) {
     if (!eventsByDate.has(event.date)) eventsByDate.set(event.date, []);
     eventsByDate.get(event.date).push(event);
   }
+  els.calendarGrid.classList.toggle("single-event", visibleMonthEvents.length === 1);
   const todayKey = dateKey(new Date());
   const fragment = document.createDocumentFragment();
   for (let i = 0; i < 42; i += 1) {
