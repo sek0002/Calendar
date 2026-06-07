@@ -180,6 +180,10 @@ function isClubMeeting(event) {
   return /^(weekly\s+)?club meeting\b/i.test(event.event_name);
 }
 
+function isCourseEvent(event) {
+  return /\bcourses?\b/i.test(event.event_name || "");
+}
+
 function isHiddenEvent(event) {
   return HIDDEN_EVENT_TITLES.has(event.event_name) || HIDDEN_TITLE_PATTERNS.some((pattern) => pattern.test(event.event_name));
 }
@@ -592,8 +596,22 @@ function renderCalendar() {
     return eventDate.getFullYear() === year && eventDate.getMonth() === month;
   });
   for (const event of state.events) {
-    if (!eventsByDate.has(event.date)) eventsByDate.set(event.date, []);
-    eventsByDate.get(event.date).push(event);
+    const start = parseDate(event.start_date || event.date);
+    const end = parseDate(event.end_date || event.date);
+    if (!isCourseEvent(event) && event.start_date && event.end_date && !Number.isNaN(start.getTime()) && !Number.isNaN(end.getTime()) && end >= start) {
+      const cursor = new Date(start);
+      while (cursor <= end) {
+        const key = dateKey(cursor);
+        if (!eventsByDate.has(key)) eventsByDate.set(key, []);
+        eventsByDate.get(key).push(event);
+        cursor.setDate(cursor.getDate() + 1);
+      }
+      continue;
+    }
+
+    const key = event.date || event.start_date;
+    if (!eventsByDate.has(key)) eventsByDate.set(key, []);
+    eventsByDate.get(key).push(event);
   }
   els.calendarGrid.classList.toggle("single-event", visibleMonthEvents.length === 1);
   const todayKey = dateKey(new Date());
