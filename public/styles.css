@@ -432,6 +432,7 @@ h1 {
   justify-content: center;
   width: 28px;
   height: 28px;
+  margin-bottom: 8px;
   border-radius: 50%;
   font-weight: 800;
   font-size: 0.88rem;
@@ -450,7 +451,7 @@ h1 {
   border-left: 4px solid var(--accent);
   border-radius: 4px;
   background: var(--chip-bg);
-  color: var(--ink);
+  color: #ffffff;
   padding: 5px 7px;
   text-align: left;
   font-size: 0.78rem;
@@ -465,38 +466,31 @@ h1 {
 .mini-event.is-multiday {
   border-left-color: #0d9488;
   background: var(--chip-bg);
-  color: #ffffff;
   font-weight: 700;
 }
 
 .mini-event.mini-event-club-meeting {
   border-left-color: #be185d;
-  color: #ffffff;
 }
 
 .mini-event.mini-event-pool-training {
   border-left-color: #1d4ed8;
-  color: #ffffff;
 }
 
 .mini-event.mini-event-shore {
   border-left-color: #5b21b6;
-  color: #ffffff;
 }
 
 .mini-event.mini-event-course {
   border-left-color: #b45309;
-  color: #ffffff;
 }
 
 .mini-event.mini-event-boat {
   border-left-color: #0891b2;
-  color: #ffffff;
 }
 
 .mini-event.mini-event-cancelled {
   border-left-color: #dc2626;
-  color: #ffffff;
 }
 
 .mini-event.mini-event-spanning.mini-event-cancelled {
@@ -507,7 +501,7 @@ h1 {
   position: relative;
   z-index: 2;
   width: 100%;
-  margin-top: 6px;
+  margin-top: 38px;
   margin-bottom: 0;
   border-left-width: 5px;
   border-radius: 8px;
