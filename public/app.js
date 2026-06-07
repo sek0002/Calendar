@@ -547,6 +547,7 @@ function showHoverCard(event, anchor) {
 function renderEventList() {
   const events = filteredEvents();
   els.eventList.innerHTML = "";
+  els.eventList.classList.toggle("single-event", events.length === 1);
   els.status.textContent = `${events.length} event${events.length === 1 ? "" : "s"}`;
   if (!events.length) {
     els.status.textContent = "No events match the current filters.";
