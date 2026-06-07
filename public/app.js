@@ -28,6 +28,17 @@ const state = {
   heroTransitionToken: 0,
 };
 
+function currentMonthKey(date = new Date()) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  return `${year}-${month}`;
+}
+
+function setDefaultMonthFilter() {
+  const key = currentMonthKey();
+  state.monthFilter = key;
+}
+
 const els = {
   heroMedia: document.querySelector("#heroMedia"),
   heroMediaNext: document.querySelector("#heroMediaNext"),
@@ -294,6 +305,12 @@ function renderMonthOptions() {
     option.value = key;
     option.textContent = new Intl.DateTimeFormat("en-AU", { month: "long", year: "numeric" }).format(date);
     els.monthSelect.append(option);
+  }
+  if (months.includes(state.monthFilter)) {
+    els.monthSelect.value = state.monthFilter;
+  } else {
+    state.monthFilter = "";
+    els.monthSelect.value = "";
   }
 }
 
@@ -822,6 +839,7 @@ async function boot() {
   try {
     const { data, url } = await fetchCalendar();
     const startYear = Number(data.start_year) || 2026;
+    setDefaultMonthFilter();
     state.events = addDefaultClubMeetings((data.events || [])
       .map((event) => ({ ...event, date: event.date || event.start_date }))
       .filter((event) => !isHiddenEvent(event))
