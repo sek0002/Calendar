@@ -427,6 +427,13 @@ function allUpcomingEvents() {
   return [...future, ...recentlyPassed].slice(0, HERO_EVENT_LIMIT);
 }
 
+function normalizeEvents(events = []) {
+  return events
+    .map((event) => ({ ...event, date: event.date || event.start_date }))
+    .filter((event) => !isHiddenEvent(event))
+    .sort(byDate);
+}
+
 function isPastEvent(event) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -873,11 +880,9 @@ async function boot() {
     const { data, url } = await fetchCalendar();
     const startYear = Number(data.start_year) || 2026;
     setDefaultMonthFilter();
-    state.events = addDefaultClubMeetings((data.events || [])
-      .map((event) => ({ ...event, date: event.date || event.start_date }))
-      .filter((event) => !isHiddenEvent(event))
-      .sort(byDate), startYear);
-    state.heroEvents = allUpcomingEvents();
+    state.events = addDefaultClubMeetings(normalizeEvents(data.events || []), startYear);
+    const providedHeroEvents = normalizeEvents(data.hero_spotlight_events || []);
+    state.heroEvents = providedHeroEvents.length ? providedHeroEvents.slice(0, HERO_EVENT_LIMIT) : allUpcomingEvents();
     state.heroIndex = 0;
     const nextEvent = state.events.find((event) => parseDate(event.date) >= new Date()) || state.events[0];
     if (nextEvent) state.shownDate = new Date(parseDate(nextEvent.date).getFullYear(), parseDate(nextEvent.date).getMonth(), 1);

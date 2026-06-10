@@ -33,8 +33,19 @@ PAST_IMG_URL = "https://muuc.teamapp.com/events/past.json?_img_data=v1&page=1"
 FUTURE_CSV_URL = f"https://muuc.teamapp.com/clubs/{CLUB_ID}/events.json?_csv_data=v1"
 FUTURE_IMG_URL = f"https://muuc.teamapp.com/clubs/{CLUB_ID}/events.json?_img_data=v1"
 MAX_FUTURE_PAGES = 20
+HERO_SPOTLIGHT_LIMIT = 5
 EXCLUDED_TITLE_EXACT = {"committee meeting"}
 EXCLUDED_TITLE_SUBSTRINGS = ("expiry",)
+HIDDEN_HERO_TITLE_EXACT = {"computer nitrox course with instructor minh"}
+HIDDEN_HERO_TITLE_PATTERNS = (re.compile(r"\btemplate\b", re.I),)
+EMAIL_RE = re.compile(r"[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}")
+PHONE_RE = re.compile(r"(?:\+?\d[\d\s()./\-]{7,}\d)")
+HIDDEN_FIELD_RE = re.compile(r"leader\s*phone|secondary\s*number", re.I)
+HEALTH_SAFETY_RE = re.compile(r"\bhealth\b.*\bsafety\b", re.I)
+NEXT_SECTION_RE = re.compile(
+    r"^(trip organiser checklist|trip info|trip details|dive sites\s*/\s*itinerary|participation requirements|gear hire policy)\b",
+    re.I,
+)
 
 
 def utc_now() -> str:
@@ -177,6 +188,88 @@ def parse_description(description: str) -> list[dict[str, Any]]:
         for section in sections
         if section["body"] or section["fields"]
     ]
+
+
+def strip_markdown(value: str) -> str:
+    return re.sub(r"[*_`#]", "", str(value or "")).strip()
+
+
+def sanitize_sensitive_text(value: str | None) -> str:
+    return PHONE_RE.sub("[redacted phone]", EMAIL_RE.sub("[redacted email]", str(value or "")))
+
+
+def is_hidden_field_label(label: str | None) -> bool:
+    return bool(HIDDEN_FIELD_RE.search(strip_markdown(label or "")))
+
+
+def is_health_safety_heading(value: str | None) -> bool:
+    return bool(HEALTH_SAFETY_RE.search(strip_markdown(value or "")))
+
+
+def sanitize_description_lines(lines: list[str]) -> list[str]:
+    sanitized: list[str] = []
+    index = 0
+    while index < len(lines):
+        line = lines[index]
+        cleaned = strip_markdown(line)
+        if is_health_safety_heading(cleaned):
+            if sanitized and is_divider_line(strip_markdown(sanitized[-1])):
+                sanitized.pop()
+            index += 1
+            while index < len(lines):
+                current = strip_markdown(lines[index])
+                next_line = strip_markdown(lines[index + 1]) if index + 1 < len(lines) else ""
+                after_next = strip_markdown(lines[index + 2]) if index + 2 < len(lines) else ""
+                if is_divider_line(current) and next_line and is_divider_line(after_next):
+                    index -= 1
+                    break
+                if NEXT_SECTION_RE.search(current):
+                    index -= 1
+                    break
+                index += 1
+            index += 1
+            continue
+        if not is_hidden_field_label(line):
+            sanitized.append(sanitize_sensitive_text(line))
+        index += 1
+    return sanitized
+
+
+def sanitize_description(description: str) -> str:
+    lines = description.replace("\r\n", "\n").replace("\r", "\n").split("\n")
+    return "\r\n".join(sanitize_description_lines(lines)).strip()
+
+
+def sanitize_description_sections(sections: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    sanitized_sections: list[dict[str, Any]] = []
+    for section in sections:
+        if is_health_safety_heading(section.get("title")):
+            continue
+        sanitized_section = {
+            **section,
+            "title": sanitize_sensitive_text(section.get("title")),
+            "fields": [
+                {
+                    **field,
+                    "label": sanitize_sensitive_text(field.get("label")),
+                    "value": sanitize_sensitive_text(field.get("value")),
+                }
+                for field in section.get("fields", [])
+                if not is_hidden_field_label(field.get("label"))
+            ],
+            "body": sanitize_description_lines(section.get("body", [])),
+        }
+        if sanitized_section["body"] or sanitized_section["fields"]:
+            sanitized_sections.append(sanitized_section)
+    return sanitized_sections
+
+
+def sanitize_event(event: dict[str, Any]) -> dict[str, Any]:
+    event["event_name"] = sanitize_sensitive_text(event.get("event_name"))
+    event["title"] = sanitize_sensitive_text(event.get("title"))
+    event["description"] = sanitize_description(event.get("description") or "")
+    event["description_sections"] = sanitize_description_sections(parse_description(event["description"]))
+    return event
 
 
 def connect(db_path: Path) -> sqlite3.Connection:
@@ -438,13 +531,41 @@ def rows_to_events(rows: list[sqlite3.Row], include_images: bool) -> list[dict[s
         if include_images and row["image_blob"]:
             encoded = base64.b64encode(row["image_blob"]).decode("ascii")
             event["image_data_url"] = f"data:{row['content_type'] or 'image/jpeg'};base64,{encoded}"
-        events.append(event)
+        events.append(sanitize_event(event))
     return events
 
 
 def is_excluded_title(title: str) -> bool:
     lowered = title.strip().lower()
     return lowered in EXCLUDED_TITLE_EXACT or any(substring in lowered for substring in EXCLUDED_TITLE_SUBSTRINGS)
+
+
+def is_club_meeting(title: str) -> bool:
+    return bool(re.match(r"^(weekly\s+)?club meeting\b", title.strip(), re.I))
+
+
+def is_hidden_hero_title(title: str) -> bool:
+    lowered = title.strip().lower()
+    return lowered in HIDDEN_HERO_TITLE_EXACT or any(pattern.search(title) for pattern in HIDDEN_HERO_TITLE_PATTERNS)
+
+
+def build_hero_spotlight_events(events: list[dict[str, Any]], today: dt.date | None = None) -> list[dict[str, Any]]:
+    today = today or dt.datetime.now().date()
+    hero_eligible = [
+        event
+        for event in events
+        if not is_club_meeting(event.get("event_name", "")) and not is_hidden_hero_title(event.get("event_name", ""))
+    ]
+    future = sorted(
+        [event for event in hero_eligible if (date := event_date(event)) is not None and date >= today],
+        key=lambda event: (event["date"], event.get("start_time") or "", event["event_name"]),
+    )
+    recently_passed = sorted(
+        [event for event in hero_eligible if (date := event_date(event)) is not None and date < today],
+        key=lambda event: (event["date"], event.get("start_time") or "", event["event_name"]),
+        reverse=True,
+    )
+    return [*future, *recently_passed][:HERO_SPOTLIGHT_LIMIT]
 
 
 def query_events(db_path: Path, start_year: int = DEFAULT_START_YEAR, include_images: bool = False) -> dict[str, Any]:
@@ -471,6 +592,7 @@ def query_events(db_path: Path, start_year: int = DEFAULT_START_YEAR, include_im
         "start_year": start_year,
         "starts_on_or_after": f"{start_year}-01-01",
         "count": len(events),
+        "hero_spotlight_events": build_hero_spotlight_events(events),
         "events": events,
     }
 
