@@ -1,0 +1,10 @@
+{
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "refresh-cookie": "node scripts/update-teamapp-cookie.mjs"
+  },
+  "dependencies": {
+    "playwright": "^1.57.0"
+  }
+}
