@@ -1136,6 +1136,11 @@ els.sortNameButton.addEventListener("click", () => {
   renderSortButtons();
   renderEventList();
 });
+els.dialog.addEventListener("click", (event) => {
+  if (event.target === els.dialog) {
+    els.dialog.close();
+  }
+});
 els.closeDialog.addEventListener("click", () => els.dialog.close());
 window.addEventListener("scroll", hideHoverCard, { passive: true });
 window.addEventListener("resize", hideHoverCard);
