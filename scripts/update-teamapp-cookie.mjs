@@ -6,14 +6,11 @@ import { chromium } from "playwright";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "..");
-const linkedEnvPath = "/Users/sekkevin/LocalR/tripleader/.env";
-const envPath = path.resolve(
-  process.env.TEAMAPP_ENV_PATH ||
-    process.env.TEAMAPP_COOKIE_ENV_PATH ||
-    (fs.existsSync(linkedEnvPath) ? linkedEnvPath : path.join(repoRoot, ".env")),
-);
+const envPath = path.resolve(process.env.TEAMAPP_ENV_PATH || process.env.TEAMAPP_COOKIE_ENV_PATH || path.join(repoRoot, ".env"));
 const eventsUrl = process.env.TEAMAPP_EVENTS_URL || "https://muuc.teamapp.com/events?_list=v1";
 const loginUrl = process.env.TEAMAPP_LOGIN_URL || "https://www.teamapp.com/user_session/new?_detail=v1";
+const dashboardUrl = process.env.TEAMAPP_DASHBOARD_URL || "https://muuc.teamapp.com/clubs/132307/dashboard?_detail=v1";
+const cookieDomains = ["https://muuc.teamapp.com"];
 const authCookieNames = ["ta_auth_token", "_teamapp_session", "__stripe_mid"];
 
 function parseEnv(text) {
@@ -45,6 +42,27 @@ function upsertEnv(text, key, value) {
   return `${text.trimEnd()}\n${line}\n`;
 }
 
+function isMuucTeamAppCookie(cookie) {
+  return /(^|\.)muuc\.teamapp\.com$/i.test(cookie.domain || "");
+}
+
+function isRootTeamAppCookie(cookie) {
+  return /(^|\.)teamapp\.com$/i.test(cookie.domain || "");
+}
+
+function mergeCookieValues(primaryCookies, allCookies) {
+  const values = new Map();
+  for (const cookie of primaryCookies) {
+    if (authCookieNames.includes(cookie.name)) values.set(cookie.name, cookie.value);
+  }
+  for (const name of ["ta_auth_token", "_teamapp_session"]) {
+    if (values.has(name)) continue;
+    const cookie = allCookies.find((candidate) => candidate.name === name && isRootTeamAppCookie(candidate));
+    if (cookie) values.set(name, cookie.value);
+  }
+  return values;
+}
+
 async function firstVisible(page, selectors) {
   for (const selector of selectors) {
     const locator = page.locator(selector).first();
@@ -56,86 +74,17 @@ async function firstVisible(page, selectors) {
 async function fillLoginForm(page, email, password) {
   const emailInput = await firstVisible(page, [
     'input[type="email"]',
-    'input[type="text"]',
     'input[name="email"]',
     'input[name="login"]',
+    'input[name="user_session[email]"]',
+    'input[name="user_session[login]"]',
     'input[name="user[email]"]',
     'input[id*="email" i]',
     'input[id*="login" i]',
     'input[autocomplete="email"]',
     'input[autocomplete="username"]',
   ]);
-  const passwordInput = await firstVisible(page, [
-    'input[type="password"]',
-    'input[name="password"]',
-    'input[name="user[password]"]',
-    'input[id*="password" i]',
-    'input[autocomplete="current-password"]',
-  ]);
-
-  if (!emailInput || !passwordInput) return false;
-
-  await emailInput.fill(email);
-  await passwordInput.fill(password);
-
-  const submit = await firstVisible(page, [
-    'button[type="submit"]',
-    'input[type="submit"]',
-    'button:has-text("Log in")',
-    'button:has-text("Login")',
-    'button:has-text("Sign in")',
-    'input[value*="Log" i]',
-    'input[value*="Sign" i]',
-  ]);
-
-  if (submit) {
-    await Promise.allSettled([
-      page.waitForLoadState("networkidle", { timeout: 15000 }),
-      submit.click(),
-    ]);
-  } else {
-    await passwordInput.press("Enter");
-    await page.waitForLoadState("networkidle", { timeout: 15000 }).catch(() => {});
-  }
-  return true;
-}
-
-async function submitControlNear(page, locator) {
-  const form = locator.locator("xpath=ancestor::form[1]");
-  if ((await form.count()) > 0) {
-    const submit = form.locator('button[type="submit"], input[type="submit"], button').first();
-    if ((await submit.count()) > 0) {
-      await Promise.allSettled([
-        page.waitForLoadState("networkidle", { timeout: 15000 }),
-        submit.click(),
-      ]);
-      return;
-    }
-  }
-  await locator.press("Enter");
-  await page.waitForLoadState("networkidle", { timeout: 15000 }).catch(() => {});
-}
-
-async function fillEmailStep(page, email) {
-  const emailInput = await firstVisible(page, [
-    'input[type="email"]',
-    'input[type="text"]',
-    'input[name="email"]',
-    'input[name="login"]',
-    'input[name="user_session[email]"]',
-    'input[id*="email" i]',
-    'input[id*="login" i]',
-    'input[autocomplete="email"]',
-    'input[autocomplete="username"]',
-  ]);
-  if (!emailInput) return false;
-  await emailInput.fill(email);
-  await submitControlNear(page, emailInput);
-  return true;
-}
-
-async function fillPasswordStep(page, password) {
-  const passwordInput = await firstVisible(page, [
+  let passwordInput = await firstVisible(page, [
     'input[type="password"]',
     'input[name="password"]',
     'input[name="user_session[password]"]',
@@ -143,23 +92,74 @@ async function fillPasswordStep(page, password) {
     'input[id*="password" i]',
     'input[autocomplete="current-password"]',
   ]);
-  if (!passwordInput) return false;
+
+  if (!emailInput && !passwordInput) return false;
+
+  if (emailInput) {
+    await emailInput.fill(email);
+  }
+
+  let submit = await firstVisible(page, [
+    'button[type="submit"]',
+    'input[type="submit"]',
+    'button:has-text("Log in")',
+    'button:has-text("Login")',
+    'button:has-text("Next")',
+    'button:has-text("Continue")',
+    'button:has-text("Sign in")',
+    'input[value*="Log" i]',
+    'input[value*="Next" i]',
+    'input[value*="Continue" i]',
+    'input[value*="Sign" i]',
+  ]);
+
+  if (emailInput && !passwordInput && submit) {
+    await Promise.allSettled([
+      page.waitForURL(/user_session\/new.*token|users\/current\/clubs|dashboard|clubs/, { timeout: 20000 }),
+      submit.click(),
+    ]);
+    await page
+      .waitForSelector(
+        'input[type="password"], input[name="password"], input[name="user_session[password]"], input[name="user[password]"], input[id*="password" i], input[autocomplete="current-password"]',
+        { timeout: 10000 },
+      )
+      .catch(() => {});
+    passwordInput = await firstVisible(page, [
+      'input[type="password"]',
+      'input[name="password"]',
+      'input[name="user_session[password]"]',
+      'input[name="user[password]"]',
+      'input[id*="password" i]',
+      'input[autocomplete="current-password"]',
+    ]);
+    submit = await firstVisible(page, [
+      'button[type="submit"]',
+      'input[type="submit"]',
+      'button:has-text("Log in")',
+      'button:has-text("Login")',
+      'button:has-text("Continue")',
+      'button:has-text("Sign in")',
+      'input[value*="Log" i]',
+      'input[value*="Continue" i]',
+      'input[value*="Sign" i]',
+    ]);
+  }
+
+  if (!passwordInput) return Boolean(emailInput);
+
   await passwordInput.fill(password);
-  await submitControlNear(page, passwordInput);
+
+  if (submit) {
+    await Promise.allSettled([
+      page.waitForURL(/users\/current\/clubs|dashboard|clubs/, { timeout: 20000 }),
+      submit.click(),
+    ]);
+    await page.waitForLoadState("networkidle", { timeout: 15000 }).catch(() => {});
+  } else {
+    await passwordInput.press("Enter");
+    await page.waitForLoadState("networkidle", { timeout: 15000 }).catch(() => {});
+  }
   return true;
-}
-
-async function loginWithTeamAppTwoStep(page, email, password) {
-  await page.goto(loginUrl, { waitUntil: "domcontentloaded", timeout: 30000 });
-  await page.waitForLoadState("networkidle", { timeout: 15000 }).catch(() => {});
-  if (!(await fillEmailStep(page, email))) return false;
-
-  await page.waitForURL(/user_session\/new.*user_session%5Btoken%5D|user_session\/new.*user_session\[token\]|user_session\/new/, {
-    timeout: 15000,
-  }).catch(() => {});
-  await page.waitForSelector('input[type="password"]', { timeout: 15000 }).catch(() => {});
-  await page.waitForLoadState("networkidle", { timeout: 15000 }).catch(() => {});
-  return fillPasswordStep(page, password);
 }
 
 function safeCookieSummary(cookies) {
@@ -167,32 +167,6 @@ function safeCookieSummary(cookies) {
     .map((cookie) => `${cookie.name}@${cookie.domain}`)
     .sort()
     .join(", ");
-}
-
-function uniqueCookies(cookies) {
-  const byNameAndDomain = new Map();
-  for (const cookie of cookies) {
-    byNameAndDomain.set(`${cookie.name}@${cookie.domain}`, cookie);
-  }
-  return [...byNameAndDomain.values()];
-}
-
-async function readMuucCookies(context, page) {
-  const scopedCookies = await context.cookies("https://muuc.teamapp.com");
-  const documentCookie = await page.evaluate(() => document.cookie).catch(() => "");
-  const documentCookies = documentCookie
-    .split(";")
-    .map((part) => part.trim())
-    .filter(Boolean)
-    .map((part) => {
-      const [name, ...rest] = part.split("=");
-      return { name, value: rest.join("="), domain: "muuc.teamapp.com" };
-    });
-  const cdpSession = await context.newCDPSession(page).catch(() => null);
-  const cdpCookies = cdpSession
-    ? (await cdpSession.send("Network.getCookies", { urls: ["https://muuc.teamapp.com"] }).catch(() => ({ cookies: [] }))).cookies
-    : [];
-  return uniqueCookies([...scopedCookies, ...documentCookies, ...cdpCookies]);
 }
 
 async function main() {
@@ -214,28 +188,46 @@ async function main() {
   const page = await context.newPage();
 
   try {
-    if (!(await fillLoginForm(page, email, password)) && !(await loginWithTeamAppTwoStep(page, email, password))) {
+    await page.goto(loginUrl, { waitUntil: "domcontentloaded", timeout: 30000 });
+    await page.waitForLoadState("networkidle", { timeout: 15000 }).catch(() => {});
+
+    if (!(await fillLoginForm(page, email, password))) {
       throw new Error("Could not complete TeamApp login form");
     }
 
-    {
-      await page.goto(eventsUrl, { waitUntil: "networkidle", timeout: 30000 }).catch(async () => {
-        await page.goto(eventsUrl, { waitUntil: "domcontentloaded", timeout: 30000 });
-      });
+    await page.waitForTimeout(1500);
+    await page.goto(dashboardUrl, { waitUntil: "networkidle", timeout: 30000 }).catch(async () => {
+      await page.goto(dashboardUrl, { waitUntil: "domcontentloaded", timeout: 30000 });
+    });
+    await page.goto(eventsUrl, { waitUntil: "networkidle", timeout: 30000 }).catch(async () => {
+      await page.goto(eventsUrl, { waitUntil: "domcontentloaded", timeout: 30000 });
+    });
+
+    const cookies = await context.cookies(cookieDomains);
+    const allCookies = await context.cookies();
+    const cookieByName = mergeCookieValues(cookies, allCookies);
+    const foundNames = authCookieNames.filter((name) => cookieByName.has(name));
+    const foundDetails = allCookies
+      .filter(
+        (cookie) =>
+          (["ta_auth_token", "_teamapp_session"].includes(cookie.name) && isRootTeamAppCookie(cookie)) ||
+          (cookie.name === "__stripe_mid" && isMuucTeamAppCookie(cookie)),
+      )
+      .map((cookie) => `${cookie.name}@${cookie.domain}`)
+      .join(", ");
+
+    if (!cookieByName.has("ta_auth_token") && !cookieByName.has("_teamapp_session")) {
+      throw new Error(
+        `Login did not produce the expected TeamApp auth cookies. TeamApp cookie names seen: ${foundDetails || safeCookieSummary(allCookies) || "none"}`,
+      );
     }
 
-    const cookies = await readMuucCookies(context, page);
-    const wanted = cookies.filter((cookie) => authCookieNames.includes(cookie.name));
-
-    if (!wanted.some((cookie) => cookie.name === "ta_auth_token") && !wanted.some((cookie) => cookie.name === "_teamapp_session")) {
-      throw new Error(`Login did not produce the expected TeamApp auth cookies. Cookie names seen: ${safeCookieSummary(cookies) || "none"}`);
-    }
-
-    const cookieHeader = wanted.map((cookie) => `${cookie.name}=${cookie.value}`).join("; ");
+    const cookieHeader = foundNames.map((name) => `${name}=${cookieByName.get(name)}`).join("; ");
     const updated = upsertEnv(envText, "TEAMAPP_COOKIE", cookieHeader);
     fs.writeFileSync(envPath, updated, { encoding: "utf8", mode: 0o600 });
     fs.chmodSync(envPath, 0o600);
-    console.log(`Updated TEAMAPP_COOKIE in ${envPath} (${wanted.length} cookies).`);
+    console.log(`Updated TEAMAPP_COOKIE in ${envPath}. Found: ${foundNames.join(", ") || "none"}.`);
+    if (foundDetails) console.log(`Cookie sources: ${foundDetails}.`);
   } finally {
     await browser.close();
   }
