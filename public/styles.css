@@ -878,7 +878,7 @@ dialog h2 {
   .app-header {
     align-items: center;
     flex-direction: row;
-    gap: 10px;
+    gap: 8px;
   }
 
   .site-logo {
@@ -887,14 +887,23 @@ dialog h2 {
   }
 
   .site-logo img {
-    height: 36px;
+    height: 32px;
   }
 
   .controls {
     flex: 1 1 auto;
     min-width: 0;
+    gap: 4px;
     overflow-x: auto;
     scrollbar-width: none;
+    white-space: nowrap;
+  }
+
+  .controls button {
+    min-width: 34px;
+    min-height: 32px;
+    padding: 0 8px;
+    flex: 0 0 auto;
   }
 
   .controls::-webkit-scrollbar {
@@ -902,7 +911,9 @@ dialog h2 {
   }
 
   #monthLabel {
-    min-width: 112px;
+    flex: 0 0 auto;
+    min-width: 92px;
+    font-size: 0.82rem;
   }
 
   .layout {
