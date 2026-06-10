@@ -118,6 +118,48 @@ def download_bytes(url: str, headers: dict[str, str]) -> tuple[bytes | None, str
         return None, None
 
 
+def image_dimensions(url: str) -> tuple[int, int]:
+    params = urllib.parse.parse_qs(urllib.parse.urlparse(url).query)
+    try:
+        width = int(params.get("w", ["0"])[0])
+        height = int(params.get("h", ["0"])[0])
+    except ValueError:
+        return 0, 0
+    return width, height
+
+
+def find_event_image_urls(value: Any) -> list[str]:
+    urls: list[str] = []
+    if isinstance(value, str) and "image-assets.teamapp.com/uploads/images/" in value:
+        urls.append(value)
+    elif isinstance(value, dict):
+        for key, item in value.items():
+            if key in {"navMenu", "bgImage"}:
+                continue
+            urls.extend(find_event_image_urls(item))
+    elif isinstance(value, list):
+        for item in value:
+            urls.extend(find_event_image_urls(item))
+    return urls
+
+
+def best_event_image_url(detail_payload: dict[str, Any]) -> str | None:
+    urls = find_event_image_urls(detail_payload.get("components", []))
+    if not urls:
+        return None
+    return max(urls, key=lambda url: image_dimensions(url)[0] * image_dimensions(url)[1])
+
+
+def fetch_detail_image_url(detail_url: str | None, headers: dict[str, str]) -> str | None:
+    if not detail_url:
+        return None
+    try:
+        payload = fetch_json(detail_url, headers)
+    except Exception:
+        return None
+    return best_event_image_url(payload)
+
+
 def event_date(event: dict[str, Any]) -> dt.date | None:
     value = event.get("start_date") or event.get("date")
     if not value:
@@ -391,7 +433,9 @@ def upsert_events(
 
         image_item = image_items.get(event_id)
         if image_item:
-            image_url = image_item["image"]
+            detail_image_url = fetch_detail_image_url(image_item.get("url"), headers)
+            image_url = detail_image_url or image_item["image"]
+            image_item = {**image_item, "selected_image": image_url}
             image_blob, content_type = (None, None)
             if fetch_images:
                 image_blob, content_type = download_bytes(image_url, headers)
