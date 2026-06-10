@@ -452,36 +452,6 @@ function calendarActionFilename(event) {
     .replace(/^-|-$/g, "") || "muuc-event"}.ics`;
 }
 
-function googleCalendarUrl(event) {
-  const { allDay, start, end } = eventCalendarTimes(event);
-  const { title, description } = eventCalendarDetails(event);
-  const dates = allDay
-    ? `${calendarDate(start)}/${calendarDate(end)}`
-    : `${calendarDateTimeUtc(start)}/${calendarDateTimeUtc(end)}`;
-  const params = new URLSearchParams({
-    action: "TEMPLATE",
-    text: title,
-    dates,
-    details: description,
-  });
-  return `https://calendar.google.com/calendar/render?${params}`;
-}
-
-function microsoftCalendarUrl(event) {
-  const { allDay, start, end } = eventCalendarTimes(event);
-  const { title, description } = eventCalendarDetails(event);
-  const params = new URLSearchParams({
-    path: "/calendar/action/compose",
-    rru: "addevent",
-    subject: title,
-    body: description,
-    startdt: start.toISOString(),
-    enddt: end.toISOString(),
-    allday: String(allDay),
-  });
-  return `https://outlook.live.com/calendar/0/deeplink/compose?${params}`;
-}
-
 function appleCalendarDataUrl(event) {
   const { allDay, start, end } = eventCalendarTimes(event);
   const { title, description, url } = eventCalendarDetails(event);
@@ -505,42 +475,6 @@ function appleCalendarDataUrl(event) {
   return `data:text/calendar;charset=utf-8,${encodeURIComponent(lines.join("\r\n"))}`;
 }
 
-function makeCalendarActionLinks(event) {
-  return {
-    google: googleCalendarUrl(event),
-    microsoft: microsoftCalendarUrl(event),
-    apple: appleCalendarDataUrl(event),
-    appleDownload: calendarActionFilename(event),
-  };
-}
-
-function smartCalendarLink(event) {
-  const links = makeCalendarActionLinks(event);
-  const userAgent = window.navigator.userAgent || "";
-  const platform = window.navigator.platform || "";
-  const isApple = /iPhone|iPad|iPod/i.test(userAgent) || /Macintosh|MacIntel|Mac/i.test(platform);
-
-  if (isApple) {
-    return {
-      href: links.apple,
-      download: links.appleDownload,
-      useDownload: true,
-    };
-  }
-
-  if (/Windows/i.test(platform) || /Windows/i.test(userAgent)) {
-    return {
-      href: links.microsoft,
-      useDownload: false,
-    };
-  }
-
-  return {
-    href: links.google,
-    useDownload: false,
-  };
-}
-
 function setCalendarActionLinks(event) {
   if (!event) {
     els.dialogCalendarExportLink.removeAttribute("href");
@@ -548,16 +482,11 @@ function setCalendarActionLinks(event) {
     return;
   }
 
-  const link = smartCalendarLink(event);
-  els.dialogCalendarExportLink.href = link.href;
-  if (link.useDownload) {
-    els.dialogCalendarExportLink.setAttribute("download", link.download);
-    els.dialogCalendarExportLink.removeAttribute("target");
-  } else {
-    els.dialogCalendarExportLink.removeAttribute("download");
-    els.dialogCalendarExportLink.setAttribute("target", "_blank");
-    els.dialogCalendarExportLink.setAttribute("rel", "noopener");
-  }
+  const fileName = calendarActionFilename(event);
+  els.dialogCalendarExportLink.href = appleCalendarDataUrl(event);
+  els.dialogCalendarExportLink.setAttribute("download", fileName);
+  els.dialogCalendarExportLink.removeAttribute("target");
+  els.dialogCalendarExportLink.removeAttribute("rel");
   els.dialogCalendarExportLink.style.display = "inline-flex";
 }
 
@@ -568,17 +497,11 @@ function setHeroCalendarActionLinks(event) {
     return;
   }
 
-  const link = smartCalendarLink(event);
-  els.heroCalendarExportLink.href = link.href;
-  if (link.useDownload) {
-    els.heroCalendarExportLink.setAttribute("download", link.download);
-    els.heroCalendarExportLink.removeAttribute("target");
-    els.heroCalendarExportLink.removeAttribute("rel");
-  } else {
-    els.heroCalendarExportLink.removeAttribute("download");
-    els.heroCalendarExportLink.setAttribute("target", "_blank");
-    els.heroCalendarExportLink.setAttribute("rel", "noopener");
-  }
+  const fileName = calendarActionFilename(event);
+  els.heroCalendarExportLink.href = appleCalendarDataUrl(event);
+  els.heroCalendarExportLink.setAttribute("download", fileName);
+  els.heroCalendarExportLink.removeAttribute("target");
+  els.heroCalendarExportLink.removeAttribute("rel");
   els.heroCalendarExportLink.style.display = "inline-flex";
 }
 
