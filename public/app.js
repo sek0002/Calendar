@@ -53,9 +53,7 @@ const els = {
   heroDate: document.querySelector("#heroDate"),
   heroDescription: document.querySelector("#heroDescription"),
   heroButton: document.querySelector("#heroButton"),
-  heroGoogleCalendarLink: document.querySelector("#heroGoogleCalendarLink"),
-  heroMicrosoftCalendarLink: document.querySelector("#heroMicrosoftCalendarLink"),
-  heroAppleCalendarLink: document.querySelector("#heroAppleCalendarLink"),
+  heroCalendarExportLink: document.querySelector("#heroCalendarExportLink"),
   heroProgressFill: document.querySelector("#heroProgressFill"),
   heroProgressDots: document.querySelector("#heroProgressDots"),
   heroUpcoming: document.querySelector("#heroUpcoming"),
@@ -80,9 +78,7 @@ const els = {
   dialogDate: document.querySelector("#dialogDate"),
   dialogTitle: document.querySelector("#dialogTitle"),
   dialogTeamappLink: document.querySelector("#dialogTeamappLink"),
-  dialogGoogleCalendarLink: document.querySelector("#dialogGoogleCalendarLink"),
-  dialogMicrosoftCalendarLink: document.querySelector("#dialogMicrosoftCalendarLink"),
-  dialogAppleCalendarLink: document.querySelector("#dialogAppleCalendarLink"),
+  dialogCalendarExportLink: document.querySelector("#dialogCalendarExportLink"),
   dialogDescription: document.querySelector("#dialogDescription"),
   hoverCard: document.querySelector("#hoverCard"),
 };
@@ -518,64 +514,72 @@ function makeCalendarActionLinks(event) {
   };
 }
 
-function setCalendarActionLinks(event) {
+function smartCalendarLink(event) {
   const links = makeCalendarActionLinks(event);
-  els.dialogGoogleCalendarLink.href = links.google;
-  els.dialogMicrosoftCalendarLink.href = links.microsoft;
-  els.dialogAppleCalendarLink.href = links.apple;
-  els.dialogAppleCalendarLink.download = links.appleDownload;
-  els.dialogGoogleCalendarLink.style.display = "inline-flex";
-  els.dialogMicrosoftCalendarLink.style.display = "inline-flex";
-  els.dialogAppleCalendarLink.style.display = "inline-flex";
+  const userAgent = window.navigator.userAgent || "";
+  const platform = window.navigator.platform || "";
+  const isApple = /iPhone|iPad|iPod/i.test(userAgent) || /Macintosh|MacIntel|Mac/i.test(platform);
+
+  if (isApple) {
+    return {
+      href: links.apple,
+      download: links.appleDownload,
+      useDownload: true,
+    };
+  }
+
+  if (/Windows/i.test(platform) || /Windows/i.test(userAgent)) {
+    return {
+      href: links.microsoft,
+      useDownload: false,
+    };
+  }
+
+  return {
+    href: links.google,
+    useDownload: false,
+  };
+}
+
+function setCalendarActionLinks(event) {
+  if (!event) {
+    els.dialogCalendarExportLink.removeAttribute("href");
+    els.dialogCalendarExportLink.style.display = "none";
+    return;
+  }
+
+  const link = smartCalendarLink(event);
+  els.dialogCalendarExportLink.href = link.href;
+  if (link.useDownload) {
+    els.dialogCalendarExportLink.setAttribute("download", link.download);
+    els.dialogCalendarExportLink.removeAttribute("target");
+  } else {
+    els.dialogCalendarExportLink.removeAttribute("download");
+    els.dialogCalendarExportLink.setAttribute("target", "_blank");
+    els.dialogCalendarExportLink.setAttribute("rel", "noopener");
+  }
+  els.dialogCalendarExportLink.style.display = "inline-flex";
 }
 
 function setHeroCalendarActionLinks(event) {
   if (!event) {
-    els.heroGoogleCalendarLink.removeAttribute("href");
-    els.heroMicrosoftCalendarLink.removeAttribute("href");
-    els.heroAppleCalendarLink.removeAttribute("href");
-    els.heroGoogleCalendarLink.style.display = "none";
-    els.heroMicrosoftCalendarLink.style.display = "none";
-    els.heroAppleCalendarLink.style.display = "none";
+    els.heroCalendarExportLink.removeAttribute("href");
+    els.heroCalendarExportLink.style.display = "none";
     return;
   }
 
-  const links = makeCalendarActionLinks(event);
-  els.heroGoogleCalendarLink.href = links.google;
-  els.heroMicrosoftCalendarLink.href = links.microsoft;
-  els.heroAppleCalendarLink.href = links.apple;
-  els.heroAppleCalendarLink.download = links.appleDownload;
-  els.heroGoogleCalendarLink.style.display = "inline-flex";
-  els.heroMicrosoftCalendarLink.style.display = "inline-flex";
-  els.heroAppleCalendarLink.style.display = "inline-flex";
-}
-
-function createHeroEventCalendarLinks(event) {
-  const links = makeCalendarActionLinks(event);
-  const fragment = document.createDocumentFragment();
-
-  const google = document.createElement("a");
-  google.href = links.google;
-  google.target = "_blank";
-  google.rel = "noopener";
-  google.className = "dialog-action-link hero-event-action-link";
-  google.textContent = "Google";
-
-  const microsoft = document.createElement("a");
-  microsoft.href = links.microsoft;
-  microsoft.target = "_blank";
-  microsoft.rel = "noopener";
-  microsoft.className = "dialog-action-link hero-event-action-link";
-  microsoft.textContent = "Microsoft";
-
-  const apple = document.createElement("a");
-  apple.href = links.apple;
-  apple.download = links.appleDownload;
-  apple.className = "dialog-action-link hero-event-action-link";
-  apple.textContent = "Apple";
-
-  fragment.append(google, microsoft, apple);
-  return fragment;
+  const link = smartCalendarLink(event);
+  els.heroCalendarExportLink.href = link.href;
+  if (link.useDownload) {
+    els.heroCalendarExportLink.setAttribute("download", link.download);
+    els.heroCalendarExportLink.removeAttribute("target");
+    els.heroCalendarExportLink.removeAttribute("rel");
+  } else {
+    els.heroCalendarExportLink.removeAttribute("download");
+    els.heroCalendarExportLink.setAttribute("target", "_blank");
+    els.heroCalendarExportLink.setAttribute("rel", "noopener");
+  }
+  els.heroCalendarExportLink.style.display = "inline-flex";
 }
 
 function hasCustomImage(event) {
@@ -749,8 +753,6 @@ function renderHero() {
 
   for (let index = 0; index < sideEvents.length; index += 1) {
     const event = sideEvents[index];
-    const item = document.createElement("div");
-    item.className = "hero-event-item";
     const button = document.createElement("button");
     button.type = "button";
     button.className = `hero-event${index === state.heroIndex ? " is-active" : ""}`;
@@ -763,13 +765,7 @@ function renderHero() {
       if (index >= 0) setHeroIndex(index);
       restartHeroCycle();
     });
-
-    const links = document.createElement("div");
-    links.className = "hero-event-actions";
-    links.append(createHeroEventCalendarLinks(event));
-
-    item.append(button, links);
-    fragment.append(item);
+    fragment.append(button);
   }
   els.heroUpcoming.append(fragment);
 }

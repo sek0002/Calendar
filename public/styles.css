@@ -324,12 +324,6 @@ h1 {
   align-items: center;
 }
 
-.hero-action-links {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
 .hero-action-link {
   display: inline-flex;
   align-items: center;
@@ -343,25 +337,6 @@ h1 {
   font-size: 0.8rem;
   font-weight: 800;
   text-decoration: none;
-}
-
-.hero-event-item {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 8px;
-}
-
-.hero-event-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  padding: 0 12px 8px;
-}
-
-.hero-event-action-link {
-  min-height: 32px;
-  padding: 0 10px;
-  font-size: 0.74rem;
 }
 
 .hero-button:disabled {

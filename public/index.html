@@ -44,11 +44,7 @@
         <p id="heroDescription" class="hero-description"></p>
         <div class="hero-actions">
           <button type="button" id="heroButton" class="hero-button">View event</button>
-          <div class="hero-action-links">
-            <a id="heroGoogleCalendarLink" class="hero-action-link" href="#" target="_blank" rel="noopener">Google</a>
-            <a id="heroMicrosoftCalendarLink" class="hero-action-link" href="#" target="_blank" rel="noopener">Microsoft</a>
-            <a id="heroAppleCalendarLink" class="hero-action-link" href="#" download="muuc-event.ics">Apple</a>
-          </div>
+          <a id="heroCalendarExportLink" class="hero-action-link" href="#" target="_blank" rel="noopener">Export</a>
         </div>
       </div>
       <div class="hero-progress" aria-hidden="true">
@@ -84,19 +80,17 @@
       </aside>
     </main>
 
-    <dialog id="eventDialog">
-      <button id="closeDialog" class="icon-button" type="button" aria-label="Close">×</button>
-      <img id="dialogImage" alt="" />
-      <p id="dialogDate" class="eyebrow"></p>
-      <h2 id="dialogTitle"></h2>
-      <div class="dialog-actions">
-        <a id="dialogTeamappLink" class="dialog-action-link" href="#" target="_blank" rel="noopener">Open event</a>
-        <a id="dialogGoogleCalendarLink" class="dialog-action-link" href="#" target="_blank" rel="noopener">Google</a>
-        <a id="dialogMicrosoftCalendarLink" class="dialog-action-link" href="#" target="_blank" rel="noopener">Microsoft</a>
-        <a id="dialogAppleCalendarLink" class="dialog-action-link" href="#" download="muuc-event.ics">Apple</a>
-      </div>
-      <div id="dialogDescription" class="structured-description"></div>
-    </dialog>
+      <dialog id="eventDialog">
+        <button id="closeDialog" class="icon-button" type="button" aria-label="Close">×</button>
+        <img id="dialogImage" alt="" />
+        <p id="dialogDate" class="eyebrow"></p>
+        <h2 id="dialogTitle"></h2>
+        <div class="dialog-actions">
+          <a id="dialogTeamappLink" class="dialog-action-link" href="#" target="_blank" rel="noopener">Open event</a>
+          <a id="dialogCalendarExportLink" class="dialog-action-link" href="#" target="_blank" rel="noopener">Export</a>
+        </div>
+        <div id="dialogDescription" class="structured-description"></div>
+      </dialog>
 
     <div id="hoverCard" class="hover-card" role="status" aria-live="polite"></div>
 
