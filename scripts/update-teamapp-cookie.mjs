@@ -8,6 +8,13 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "..");
 const envPath = path.join(repoRoot, ".env");
 const eventsUrl = process.env.TEAMAPP_EVENTS_URL || "https://muuc.teamapp.com/events?_list=v1";
+const loginUrls = [
+  process.env.TEAMAPP_LOGIN_URL,
+  "https://muuc.teamapp.com/users/sign_in",
+  "https://www.teamapp.com/users/sign_in",
+  "https://www.teamapp.com/login",
+].filter(Boolean);
+const authCookieNames = ["ta_auth_token", "_teamapp_session", "__stripe_mid"];
 
 function parseEnv(text) {
   const values = {};
@@ -49,10 +56,14 @@ async function firstVisible(page, selectors) {
 async function fillLoginForm(page, email, password) {
   const emailInput = await firstVisible(page, [
     'input[type="email"]',
+    'input[type="text"]',
     'input[name="email"]',
+    'input[name="login"]',
     'input[name="user[email]"]',
     'input[id*="email" i]',
+    'input[id*="login" i]',
     'input[autocomplete="email"]',
+    'input[autocomplete="username"]',
   ]);
   const passwordInput = await firstVisible(page, [
     'input[type="password"]',
@@ -89,6 +100,27 @@ async function fillLoginForm(page, email, password) {
   return true;
 }
 
+async function loginFromAnyKnownPage(page, email, password) {
+  await page.goto(eventsUrl, { waitUntil: "domcontentloaded", timeout: 30000 });
+  await page.waitForLoadState("networkidle", { timeout: 15000 }).catch(() => {});
+  if (await fillLoginForm(page, email, password)) return true;
+
+  for (const loginUrl of loginUrls) {
+    await page.goto(loginUrl, { waitUntil: "domcontentloaded", timeout: 30000 }).catch(() => {});
+    await page.waitForLoadState("networkidle", { timeout: 15000 }).catch(() => {});
+    if (await fillLoginForm(page, email, password)) return true;
+  }
+
+  return false;
+}
+
+function safeCookieSummary(cookies) {
+  return cookies
+    .map((cookie) => `${cookie.name}@${cookie.domain}`)
+    .sort()
+    .join(", ");
+}
+
 async function main() {
   if (!fs.existsSync(envPath)) {
     throw new Error(`Missing .env at ${envPath}`);
@@ -108,22 +140,17 @@ async function main() {
   const page = await context.newPage();
 
   try {
-    await page.goto(eventsUrl, { waitUntil: "domcontentloaded", timeout: 30000 });
-    await page.waitForLoadState("networkidle", { timeout: 15000 }).catch(() => {});
-
-    if (await fillLoginForm(page, email, password)) {
+    if (await loginFromAnyKnownPage(page, email, password)) {
       await page.goto(eventsUrl, { waitUntil: "networkidle", timeout: 30000 }).catch(async () => {
         await page.goto(eventsUrl, { waitUntil: "domcontentloaded", timeout: 30000 });
       });
     }
 
-    const cookies = await context.cookies(["https://muuc.teamapp.com", "https://www.teamapp.com"]);
-    const wanted = cookies.filter((cookie) =>
-      ["ta_auth_token", "_teamapp_session", "__stripe_mid"].includes(cookie.name),
-    );
+    const cookies = await context.cookies();
+    const wanted = cookies.filter((cookie) => authCookieNames.includes(cookie.name));
 
     if (!wanted.some((cookie) => cookie.name === "ta_auth_token") && !wanted.some((cookie) => cookie.name === "_teamapp_session")) {
-      throw new Error("Login did not produce the expected TeamApp auth cookies");
+      throw new Error(`Login did not produce the expected TeamApp auth cookies. Cookie names seen: ${safeCookieSummary(cookies) || "none"}`);
     }
 
     const cookieHeader = wanted.map((cookie) => `${cookie.name}=${cookie.value}`).join("; ");
