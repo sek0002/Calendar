@@ -328,17 +328,44 @@ function hasCustomImage(event) {
   return Boolean(event.image_data_url || event.image_url);
 }
 
+function sanitizeSensitiveText(value) {
+  const withRedactedEmails = String(value || "")
+    .replace(/[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}/g, "[redacted email]");
+  const sanitizedText = withRedactedEmails.replace(
+    /\b(?:\+?\d[\d\s()./\-.]{7,}\d)\b/g,
+    "[redacted phone]",
+  );
+  return sanitizedText;
+}
+
+function isHiddenFieldLabel(label = "") {
+  return /leader phone|secondary number/i.test(String(label || ""));
+}
+
+function isHealthAndSafetySection(title = "") {
+  return /\bhealth\b.*\bsafety\b/i.test(String(title || ""));
+}
+
 function sectionText(section) {
+  const title = String(section.title || "").toLowerCase();
+  if (isHealthAndSafetySection(title)) return "";
   const fields = (section.fields || [])
-    .filter((field) => field.value)
-    .map((field) => `${field.label}: ${field.value}`);
-  return [...fields, ...(section.body || [])].join(" ");
+    .filter((field) => field.value && !isHiddenFieldLabel(field.label))
+    .map((field) => `${sanitizeSensitiveText(field.label)}: ${sanitizeSensitiveText(field.value)}`);
+  const bodyLines = (section.body || []).map((line) => sanitizeSensitiveText(line)).filter(Boolean);
+  return [...fields, ...bodyLines].join(" ");
 }
 
 function descriptionSummary(event, maxLength = 220) {
   const sections = event.description_sections || [];
-  const text = sections.length ? sections.map(sectionText).filter(Boolean).join(" ") : event.description || "";
-  const cleaned = text.replace(/\s+/g, " ").trim();
+  const relevantSections = [];
+  for (const section of sections) {
+    const chunk = sectionText(section);
+    if (chunk) relevantSections.push(chunk);
+  }
+  const hasDescriptionSections = relevantSections.length > 0;
+  const text = hasDescriptionSections ? relevantSections.join(" ") : sanitizeSensitiveText(event.description || "");
+  const cleaned = sanitizeSensitiveText(text).replace(/\s+/g, " ").trim();
   if (cleaned.length <= maxLength) return cleaned;
   return `${cleaned.slice(0, maxLength - 1).trim()}…`;
 }
@@ -349,26 +376,28 @@ function renderStructuredDescription(container, event, options = {}) {
   const sections = event.description_sections || [];
   if (!sections.length) {
     const paragraph = document.createElement("p");
-    paragraph.textContent = event.description || "";
+    paragraph.textContent = sanitizeSensitiveText(event.description || "");
     container.append(paragraph);
     return;
   }
 
   for (const section of sections) {
+    if (isHealthAndSafetySection(section.title)) continue;
     const sectionEl = document.createElement("section");
     sectionEl.className = "description-section";
     const title = document.createElement("h3");
-    title.textContent = section.title;
+    title.textContent = sanitizeSensitiveText(section.title);
     sectionEl.append(title);
 
     if (section.fields?.length) {
       const dl = document.createElement("dl");
       for (const field of section.fields) {
+        if (isHiddenFieldLabel(field.label)) continue;
         if (compact && !field.value) continue;
         const dt = document.createElement("dt");
-        dt.textContent = field.label;
+        dt.textContent = sanitizeSensitiveText(field.label);
         const dd = document.createElement("dd");
-        dd.textContent = field.value || "—";
+        dd.textContent = sanitizeSensitiveText(field.value || "—");
         dl.append(dt, dd);
       }
       if (dl.children.length) sectionEl.append(dl);
@@ -376,8 +405,10 @@ function renderStructuredDescription(container, event, options = {}) {
 
     for (const line of section.body || []) {
       if (compact && sectionEl.querySelectorAll("p").length > 1) break;
+      const sanitizedLine = sanitizeSensitiveText(line);
+      if (!sanitizedLine) continue;
       const paragraph = document.createElement("p");
-      paragraph.textContent = line;
+      paragraph.textContent = sanitizedLine;
       sectionEl.append(paragraph);
     }
     container.append(sectionEl);
@@ -437,7 +468,7 @@ function renderHero() {
   void els.heroTitle.parentElement.offsetWidth;
   els.heroTitle.parentElement.classList.add("text-fade");
   els.heroEyebrow.textContent = isPastEvent(featured) ? "Spotlight" : "Upcoming";
-  els.heroTitle.textContent = featured.event_name;
+  els.heroTitle.textContent = sanitizeSensitiveText(featured.event_name);
   els.heroDate.textContent = `${eventDateLabel(featured)} · ${state.heroIndex + 1} of ${state.heroEvents.length}`;
   els.heroDescription.textContent = descriptionSummary(featured, 320);
   els.heroButton.disabled = false;
@@ -461,7 +492,7 @@ function renderHero() {
     const date = document.createElement("span");
     date.textContent = eventDateLabel(event);
     const title = document.createElement("strong");
-    title.textContent = event.event_name;
+    title.textContent = sanitizeSensitiveText(event.event_name);
     button.append(date, title);
     button.addEventListener("click", () => {
       if (index >= 0) setHeroIndex(index);
@@ -525,7 +556,7 @@ async function crossfadeHeroImage(image, customImage) {
 
 function openEvent(event) {
   els.dialogDate.textContent = eventDateLabel(event);
-  els.dialogTitle.textContent = event.event_name;
+  els.dialogTitle.textContent = sanitizeSensitiveText(event.event_name);
   const url = teamappUrl(event);
   if (url) {
     els.dialogTeamappLink.href = url;
@@ -537,7 +568,7 @@ function openEvent(event) {
   renderStructuredDescription(els.dialogDescription, event);
   const image = eventImage(event);
   els.dialogImage.src = image;
-  els.dialogImage.alt = event.event_name;
+  els.dialogImage.alt = sanitizeSensitiveText(event.event_name);
   els.dialogImage.classList.toggle("default-image", !hasCustomImage(event));
   els.dialogImage.style.display = "block";
   els.dialog.showModal();
@@ -564,7 +595,7 @@ function renderHoverCard(event) {
   date.className = "hover-card-date";
   date.textContent = eventDateLabel(event);
   const title = document.createElement("h3");
-  title.textContent = event.event_name;
+  title.textContent = sanitizeSensitiveText(event.event_name);
   const description = document.createElement("p");
   description.className = "hover-card-description";
   description.textContent = descriptionSummary(event, 170);
@@ -617,7 +648,7 @@ function renderEventList() {
     img.alt = "";
     const content = document.createElement("div");
     const title = document.createElement("h3");
-    title.textContent = event.event_name;
+    title.textContent = sanitizeSensitiveText(event.event_name);
     const date = document.createElement("p");
     date.textContent = eventDateLabel(event);
     const description = document.createElement("p");
@@ -744,7 +775,7 @@ function renderCalendar() {
       const ghostSlots = ghostSlotsByIndex.get(index) || [];
       ghostSlots.push({
         lane,
-        eventName: rangeEvent.event.event_name,
+        eventName: sanitizeSensitiveText(rangeEvent.event.event_name),
       });
       ghostSlotsByIndex.set(index, ghostSlots);
     }
@@ -794,8 +825,9 @@ function renderCalendar() {
           parseDate(event.end_date) > parseDate(event.start_date),
       );
       chip.type = "button";
-      chip.textContent = event.event_name;
-      chip.title = event.event_name;
+      const sanitizedEventName = sanitizeSensitiveText(event.event_name);
+      chip.textContent = sanitizedEventName;
+      chip.title = sanitizedEventName;
       chip.addEventListener("click", () => openEvent(event));
       chip.addEventListener("mouseenter", () => showHoverCard(event, chip));
       chip.addEventListener("mousemove", () => positionHoverCard(chip));
@@ -812,12 +844,13 @@ function renderCalendar() {
     const category = eventCategory(event);
     chip.className = `mini-event mini-event-spanning mini-event-${category}`;
     chip.classList.add("is-multiday");
+    const sanitizedSpanningEventName = sanitizeSensitiveText(event.event_name);
     chip.type = "button";
     chip.style.gridColumn = `${(rangeEvent.startIndex % 7) + 1} / span ${(rangeEvent.endIndex - rangeEvent.startIndex) + 1}`;
     chip.style.gridRow = `${Math.floor(rangeEvent.startIndex / 7) + 1}`;
     chip.style.setProperty("--event-lane", String(rangeEvent.lane || 0));
-    chip.textContent = event.event_name;
-    chip.title = event.event_name;
+    chip.textContent = sanitizedSpanningEventName;
+    chip.title = sanitizedSpanningEventName;
     chip.addEventListener("click", () => openEvent(event));
     chip.addEventListener("mouseenter", () => showHoverCard(event, chip));
     chip.addEventListener("mousemove", () => positionHoverCard(chip));
