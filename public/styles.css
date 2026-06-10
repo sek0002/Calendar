@@ -191,7 +191,7 @@ h1 {
 }
 
 .hero-media.active {
-  opacity: 0.74;
+  opacity: 0.88;
   transform: scale(1.02);
 }
 
@@ -216,7 +216,7 @@ h1 {
 }
 
 .hero-media.default-image.active {
-  opacity: 0.66;
+  opacity: 0.8;
 }
 
 .hero-content.text-fade {
