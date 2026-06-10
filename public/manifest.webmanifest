@@ -1,6 +1,6 @@
 {
-  "name": "MUUC Calendar",
-  "short_name": "MUUC",
+  "name": "MUUC events",
+  "short_name": "MUUC events",
   "description": "MUUC events calendar",
   "start_url": "./",
   "scope": "./",
