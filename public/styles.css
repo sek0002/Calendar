@@ -62,10 +62,10 @@ select {
 
 .app-header {
   display: flex;
-  align-items: end;
+  align-items: center;
   justify-content: space-between;
   gap: 24px;
-  padding: 8px clamp(16px, 4vw, 48px);
+  padding: 5px clamp(16px, 4vw, 48px);
   border-bottom: 1px solid var(--line);
   background: var(--header-bg);
   backdrop-filter: blur(14px);
@@ -76,12 +76,14 @@ select {
 
 .site-logo {
   display: inline-flex;
-  align-items: flex-end;
+  align-items: center;
+  align-self: stretch;
 }
 
 .site-logo img {
   width: auto;
-  height: 32px;
+  height: 100%;
+  max-height: 40px;
   object-fit: contain;
   display: block;
 }
