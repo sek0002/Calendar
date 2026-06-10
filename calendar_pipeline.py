@@ -23,7 +23,7 @@ from typing import Any
 
 
 CLUB_ID = "132307"
-DEFAULT_START_YEAR = 2026
+DEFAULT_START_YEAR = dt.date.today().year
 DEFAULT_DB = Path(__file__).with_name("calendar.db")
 DEFAULT_STATIC_EXPORT = Path(__file__).with_name("public").joinpath("data", "events.json")
 DEFAULT_ENV = Path(__file__).with_name(".env")
@@ -715,7 +715,7 @@ def parse_args() -> argparse.Namespace:
         dest="year",
         type=int,
         default=DEFAULT_START_YEAR,
-        help="Starting year to keep; events before 1 Jan of this year are excluded.",
+        help="Starting year to keep; includes all future events with no end date.",
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
@@ -726,7 +726,7 @@ def parse_args() -> argparse.Namespace:
         dest="year",
         type=int,
         default=argparse.SUPPRESS,
-        help="Starting year to keep; events before 1 Jan of this year are excluded.",
+        help="Starting year to keep; includes all future events with no end date.",
     )
     ingest_parser.add_argument("--skip-image-downloads", action="store_true", help="Store image URLs/payloads only.")
 
@@ -737,7 +737,7 @@ def parse_args() -> argparse.Namespace:
         dest="year",
         type=int,
         default=argparse.SUPPRESS,
-        help="Starting year to keep; events before 1 Jan of this year are excluded.",
+        help="Starting year to keep; includes all future events with no end date.",
     )
     import_parser.add_argument("csv_path", type=Path)
 
@@ -748,7 +748,7 @@ def parse_args() -> argparse.Namespace:
         dest="year",
         type=int,
         default=argparse.SUPPRESS,
-        help="Starting year to keep; events before 1 Jan of this year are excluded.",
+        help="Starting year to keep; includes all future events with no end date.",
     )
     export_parser.add_argument("--output", type=Path, default=DEFAULT_STATIC_EXPORT)
     export_parser.add_argument("--include-image-data", action="store_true", help="Embed image blobs as data URLs.")
@@ -760,7 +760,7 @@ def parse_args() -> argparse.Namespace:
         dest="year",
         type=int,
         default=argparse.SUPPRESS,
-        help="Starting year to keep; events before 1 Jan of this year are excluded.",
+        help="Starting year to keep; includes all future events with no end date.",
     )
     serve_parser.add_argument("--host", default="127.0.0.1")
     serve_parser.add_argument("--port", type=int, default=8765)
@@ -772,7 +772,7 @@ def parse_args() -> argparse.Namespace:
         dest="year",
         type=int,
         default=argparse.SUPPRESS,
-        help="Starting year to keep; events before 1 Jan of this year are excluded.",
+        help="Starting year to keep; includes all future events with no end date.",
     )
     return parser.parse_args()
 
