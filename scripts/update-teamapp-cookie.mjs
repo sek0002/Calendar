@@ -6,7 +6,12 @@ import { chromium } from "playwright";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "..");
-const envPath = path.join(repoRoot, ".env");
+const linkedEnvPath = "/Users/sekkevin/LocalR/tripleader/.env";
+const envPath = path.resolve(
+  process.env.TEAMAPP_ENV_PATH ||
+    process.env.TEAMAPP_COOKIE_ENV_PATH ||
+    (fs.existsSync(linkedEnvPath) ? linkedEnvPath : path.join(repoRoot, ".env")),
+);
 const eventsUrl = process.env.TEAMAPP_EVENTS_URL || "https://muuc.teamapp.com/events?_list=v1";
 const loginUrl = process.env.TEAMAPP_LOGIN_URL || "https://www.teamapp.com/user_session/new?_detail=v1";
 const authCookieNames = ["ta_auth_token", "_teamapp_session", "__stripe_mid"];
