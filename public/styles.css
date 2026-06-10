@@ -9,7 +9,7 @@
   --accent: #087f8c;
   --accent-dark: #05616b;
   --coral: #c75b39;
-  --header-bg: rgba(255, 255, 255, 0.72);
+  --header-bg: rgba(27, 39, 203, 0.72);
   --day-bg: rgba(255, 255, 255, 0.55);
   --outside-day-bg: rgba(255, 255, 255, 0.22);
   --chip-bg: #dff3ef;
@@ -31,7 +31,7 @@ html[data-theme="dark"] {
   --accent: #35c2d0;
   --accent-dark: #82ecf0;
   --coral: #f07c5c;
-  --header-bg: rgba(0, 11, 31, 0.78);
+  --header-bg: rgba(27, 39, 203, 0.78);
   --day-bg: rgba(10, 29, 56, 0.72);
   --outside-day-bg: rgba(8, 22, 45, 0.42);
   --chip-bg: rgba(53, 194, 208, 0.18);
