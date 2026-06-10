@@ -1041,13 +1041,18 @@ dialog h2 {
   }
 
   .calendar-panel {
-    overflow-x: auto;
     margin-bottom: 24px;
   }
 
   .weekday-grid,
   .calendar-grid {
-    min-width: 720px;
+    min-width: 0;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+  }
+
+  .day-cell {
+    min-height: 96px;
+    padding: 6px;
   }
 
   .details-panel {
