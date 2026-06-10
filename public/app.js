@@ -57,6 +57,9 @@ const els = {
   heroProgressDots: document.querySelector("#heroProgressDots"),
   heroUpcoming: document.querySelector("#heroUpcoming"),
   monthLabel: document.querySelector("#monthLabel"),
+  monthJumpPanel: document.querySelector("#monthJumpPanel"),
+  jumpMonthSelect: document.querySelector("#jumpMonthSelect"),
+  jumpYearSelect: document.querySelector("#jumpYearSelect"),
   calendarGrid: document.querySelector("#calendarGrid"),
   eventList: document.querySelector("#eventList"),
   status: document.querySelector("#status"),
@@ -320,6 +323,55 @@ function renderMonthOptions() {
     state.monthFilter = "";
     els.monthSelect.value = "";
   }
+}
+
+function renderJumpOptions(startYear = 2026) {
+  els.jumpMonthSelect.innerHTML = "";
+  for (let month = 0; month < 12; month += 1) {
+    const option = document.createElement("option");
+    option.value = String(month);
+    option.textContent = new Intl.DateTimeFormat("en-AU", { month: "short" }).format(new Date(2026, month, 1));
+    els.jumpMonthSelect.append(option);
+  }
+
+  els.jumpYearSelect.innerHTML = "";
+  const eventYears = state.events.map((event) => parseDate(event.date).getFullYear()).filter(Number.isFinite);
+  const currentYear = new Date().getFullYear();
+  const minYear = Math.min(startYear, currentYear, ...eventYears);
+  const maxYear = Math.max(currentYear + 2, ...eventYears);
+  for (let year = minYear; year <= maxYear; year += 1) {
+    const option = document.createElement("option");
+    option.value = String(year);
+    option.textContent = String(year);
+    els.jumpYearSelect.append(option);
+  }
+  syncJumpControls();
+}
+
+function syncJumpControls() {
+  els.jumpMonthSelect.value = String(state.shownDate.getMonth());
+  els.jumpYearSelect.value = String(state.shownDate.getFullYear());
+}
+
+function closeMonthJump() {
+  els.monthJumpPanel.hidden = true;
+  els.monthLabel.setAttribute("aria-expanded", "false");
+}
+
+function toggleMonthJump() {
+  const isOpening = els.monthJumpPanel.hidden;
+  els.monthJumpPanel.hidden = !isOpening;
+  els.monthLabel.setAttribute("aria-expanded", String(isOpening));
+  if (isOpening) {
+    syncJumpControls();
+    els.jumpMonthSelect.focus();
+  }
+}
+
+function jumpToSelectedMonth() {
+  state.shownDate = new Date(Number(els.jumpYearSelect.value), Number(els.jumpMonthSelect.value), 1);
+  renderCalendar();
+  closeMonthJump();
 }
 
 function eventImage(event) {
@@ -680,6 +732,7 @@ function renderCalendar() {
   const year = state.shownDate.getFullYear();
   const month = state.shownDate.getMonth();
   els.monthLabel.textContent = new Intl.DateTimeFormat("en-AU", { month: "long", year: "numeric" }).format(state.shownDate);
+  syncJumpControls();
   els.calendarGrid.innerHTML = "";
 
   const first = new Date(year, month, 1);
@@ -895,6 +948,7 @@ async function boot() {
     const nextEvent = state.events.find((event) => parseDate(event.date) >= new Date()) || state.events[0];
     if (nextEvent) state.shownDate = new Date(parseDate(nextEvent.date).getFullYear(), parseDate(nextEvent.date).getMonth(), 1);
     renderMonthOptions();
+    renderJumpOptions(startYear);
     renderSortButtons();
     renderHero();
     restartHeroCycle();
@@ -908,6 +962,15 @@ async function boot() {
 
 els.prevButton.addEventListener("click", () => moveMonth(-1));
 els.nextButton.addEventListener("click", () => moveMonth(1));
+els.monthLabel.addEventListener("click", toggleMonthJump);
+els.jumpMonthSelect.addEventListener("change", jumpToSelectedMonth);
+els.jumpYearSelect.addEventListener("change", jumpToSelectedMonth);
+document.addEventListener("click", (event) => {
+  if (!els.monthJumpPanel.hidden && !event.target.closest(".month-jump")) closeMonthJump();
+});
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") closeMonthJump();
+});
 els.todayButton.addEventListener("click", () => {
   const today = new Date();
   state.shownDate = new Date(today.getFullYear(), today.getMonth(), 1);

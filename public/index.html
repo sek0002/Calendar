@@ -22,7 +22,13 @@
       <div class="controls">
         <button type="button" id="todayButton" title="Jump to the current month">Today</button>
         <button type="button" id="prevButton" title="Previous month" aria-label="Previous month">‹</button>
-        <strong id="monthLabel"></strong>
+        <div class="month-jump">
+          <button type="button" id="monthLabel" class="month-label" aria-expanded="false" title="Choose month and year"></button>
+          <div id="monthJumpPanel" class="month-jump-panel" hidden>
+            <select id="jumpMonthSelect" aria-label="Choose month"></select>
+            <select id="jumpYearSelect" aria-label="Choose year"></select>
+          </div>
+        </div>
         <button type="button" id="nextButton" title="Next month" aria-label="Next month">›</button>
         <button type="button" id="themeToggle" class="theme-toggle" title="Toggle dark mode" aria-label="Toggle dark mode" aria-pressed="false">☾</button>
       </div>

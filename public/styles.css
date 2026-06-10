@@ -116,6 +116,7 @@ h1 {
 }
 
 .controls button,
+.controls select,
 .toolbar input,
 .toolbar select {
   min-height: 40px;
@@ -147,6 +148,39 @@ h1 {
 #monthLabel {
   min-width: 150px;
   text-align: center;
+}
+
+.month-jump {
+  position: relative;
+  display: flex;
+}
+
+.month-label {
+  min-width: 150px;
+}
+
+.month-jump-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 50%;
+  z-index: 20;
+  display: flex;
+  gap: 6px;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+  transform: translateX(-50%);
+}
+
+.month-jump-panel[hidden] {
+  display: none;
+}
+
+.month-jump-panel select {
+  min-height: 34px;
+  padding: 0 8px;
 }
 
 .hero-banner {
@@ -930,6 +964,16 @@ dialog h2 {
     flex: 0 0 auto;
     min-width: 92px;
     font-size: 0.82rem;
+  }
+
+  .month-label {
+    min-width: 92px;
+  }
+
+  .month-jump-panel {
+    left: auto;
+    right: 0;
+    transform: none;
   }
 
   .layout {
