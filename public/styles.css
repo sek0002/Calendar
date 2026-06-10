@@ -342,7 +342,7 @@ h1 {
 .hero-action-link[aria-label="Export event"] {
   width: 38px;
   padding: 0;
-  font-size: 1.3rem;
+  font-size: 0;
 }
 
 .hero-button:disabled {
@@ -880,7 +880,16 @@ dialog h2 {
 .dialog-action-link[aria-label="Export event"] {
   width: 38px;
   padding: 0;
-  font-size: 1.3rem;
+  font-size: 0;
+}
+
+.calendar-vector-icon {
+  width: 18px;
+  height: 18px;
+  stroke-width: 1.8;
+  stroke: currentColor;
+  fill: none;
+  display: block;
 }
 
 .dialog-action-link:hover {

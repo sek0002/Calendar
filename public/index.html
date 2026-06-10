@@ -44,7 +44,12 @@
         <p id="heroDescription" class="hero-description"></p>
         <div class="hero-actions">
           <button type="button" id="heroButton" class="hero-button">View event</button>
-          <a id="heroCalendarExportLink" class="hero-action-link" href="#" download="muuc-event.ics" aria-label="Export event">📅</a>
+          <a id="heroCalendarExportLink" class="hero-action-link" href="#" download="muuc-event.ics" aria-label="Export event">
+            <svg viewBox="0 0 24 24" class="calendar-vector-icon" aria-hidden="true">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2" fill="none" />
+              <path d="M8 3v4M16 3v4M3 8h18" fill="none" stroke-linecap="round" />
+            </svg>
+          </a>
         </div>
       </div>
       <div class="hero-progress" aria-hidden="true">
@@ -87,7 +92,12 @@
         <h2 id="dialogTitle"></h2>
         <div class="dialog-actions">
           <a id="dialogTeamappLink" class="dialog-action-link" href="#" target="_blank" rel="noopener">Open event</a>
-          <a id="dialogCalendarExportLink" class="dialog-action-link" href="#" download="muuc-event.ics" aria-label="Export event">📅</a>
+          <a id="dialogCalendarExportLink" class="dialog-action-link" href="#" download="muuc-event.ics" aria-label="Export event">
+            <svg viewBox="0 0 24 24" class="calendar-vector-icon" aria-hidden="true">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2" fill="none" />
+              <path d="M8 3v4M16 3v4M3 8h18" fill="none" stroke-linecap="round" />
+            </svg>
+          </a>
         </div>
         <div id="dialogDescription" class="structured-description"></div>
       </dialog>
