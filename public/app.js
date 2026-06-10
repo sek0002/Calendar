@@ -93,7 +93,9 @@ function setTheme(theme) {
   document.documentElement.dataset.theme = theme;
   window.localStorage.setItem(THEME_STORAGE_KEY, theme);
   const isDark = theme === "dark";
-  els.themeToggle.textContent = isDark ? "Light" : "Dark";
+  els.themeToggle.textContent = isDark ? "☀" : "☾";
+  els.themeToggle.title = isDark ? "Switch to light mode" : "Switch to dark mode";
+  els.themeToggle.setAttribute("aria-label", els.themeToggle.title);
   els.themeToggle.setAttribute("aria-pressed", String(isDark));
 }
 
