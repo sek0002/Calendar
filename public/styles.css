@@ -74,6 +74,18 @@ select {
   z-index: 10;
 }
 
+.site-logo {
+  display: inline-flex;
+  align-items: flex-end;
+}
+
+.site-logo img {
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+  display: block;
+}
+
 .eyebrow {
   margin: 0 0 4px;
   color: var(--accent-dark);
