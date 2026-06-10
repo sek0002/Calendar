@@ -65,7 +65,7 @@ select {
   align-items: end;
   justify-content: space-between;
   gap: 24px;
-  padding: 28px clamp(16px, 4vw, 48px) 18px;
+  padding: 12px clamp(16px, 4vw, 48px);
   border-bottom: 1px solid var(--line);
   background: var(--header-bg);
   backdrop-filter: blur(14px);
@@ -80,8 +80,8 @@ select {
 }
 
 .site-logo img {
-  width: 24px;
-  height: 24px;
+  width: auto;
+  height: 40px;
   object-fit: contain;
   display: block;
 }
