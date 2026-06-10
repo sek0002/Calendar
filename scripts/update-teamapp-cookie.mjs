@@ -11,8 +11,6 @@ const eventsUrl = process.env.TEAMAPP_EVENTS_URL || "https://muuc.teamapp.com/ev
 const loginUrls = [
   process.env.TEAMAPP_LOGIN_URL,
   "https://muuc.teamapp.com/users/sign_in",
-  "https://www.teamapp.com/users/sign_in",
-  "https://www.teamapp.com/login",
 ].filter(Boolean);
 const authCookieNames = ["ta_auth_token", "_teamapp_session", "__stripe_mid"];
 
@@ -121,6 +119,32 @@ function safeCookieSummary(cookies) {
     .join(", ");
 }
 
+function uniqueCookies(cookies) {
+  const byNameAndDomain = new Map();
+  for (const cookie of cookies) {
+    byNameAndDomain.set(`${cookie.name}@${cookie.domain}`, cookie);
+  }
+  return [...byNameAndDomain.values()];
+}
+
+async function readMuucCookies(context, page) {
+  const scopedCookies = await context.cookies("https://muuc.teamapp.com");
+  const documentCookie = await page.evaluate(() => document.cookie).catch(() => "");
+  const documentCookies = documentCookie
+    .split(";")
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .map((part) => {
+      const [name, ...rest] = part.split("=");
+      return { name, value: rest.join("="), domain: "muuc.teamapp.com" };
+    });
+  const cdpSession = await context.newCDPSession(page).catch(() => null);
+  const cdpCookies = cdpSession
+    ? (await cdpSession.send("Network.getCookies", { urls: ["https://muuc.teamapp.com"] }).catch(() => ({ cookies: [] }))).cookies
+    : [];
+  return uniqueCookies([...scopedCookies, ...documentCookies, ...cdpCookies]);
+}
+
 async function main() {
   if (!fs.existsSync(envPath)) {
     throw new Error(`Missing .env at ${envPath}`);
@@ -146,7 +170,7 @@ async function main() {
       });
     }
 
-    const cookies = await context.cookies();
+    const cookies = await readMuucCookies(context, page);
     const wanted = cookies.filter((cookie) => authCookieNames.includes(cookie.name));
 
     if (!wanted.some((cookie) => cookie.name === "ta_auth_token") && !wanted.some((cookie) => cookie.name === "_teamapp_session")) {
