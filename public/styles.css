@@ -891,9 +891,11 @@ dialog h2 {
   }
 
   .controls {
-    flex: 1 1 auto;
+    flex: 0 1 auto;
+    margin-left: auto;
     min-width: 0;
     gap: 4px;
+    justify-content: flex-end;
     overflow-x: auto;
     scrollbar-width: none;
     white-space: nowrap;
