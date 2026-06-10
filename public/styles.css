@@ -163,8 +163,8 @@ h1 {
   inset: 0;
   z-index: -1;
   background:
-    linear-gradient(90deg, rgba(5, 17, 22, 0.7), rgba(5, 17, 22, 0.46) 44%, rgba(5, 17, 22, 0.18)),
-    linear-gradient(0deg, rgba(5, 17, 22, 0.44), rgba(5, 17, 22, 0.08) 56%);
+    linear-gradient(90deg, rgba(5, 17, 22, 0.86), rgba(5, 17, 22, 0.62) 44%, rgba(5, 17, 22, 0.28)),
+    linear-gradient(0deg, rgba(5, 17, 22, 0.54), rgba(5, 17, 22, 0.16) 56%);
 }
 
 .hero-banner::after {
@@ -191,7 +191,7 @@ h1 {
 }
 
 .hero-media.active {
-  opacity: 0.88;
+  opacity: 1;
   transform: scale(1.02);
 }
 
@@ -205,7 +205,7 @@ h1 {
   content: "";
   position: absolute;
   inset: 0;
-  background: rgba(11, 24, 30, 0.36);
+  background: rgba(11, 24, 30, 0);
 }
 
 .hero-media.default-image {
@@ -216,7 +216,7 @@ h1 {
 }
 
 .hero-media.default-image.active {
-  opacity: 0.8;
+  opacity: 1;
 }
 
 .hero-content.text-fade {
