@@ -53,6 +53,9 @@ const els = {
   heroDate: document.querySelector("#heroDate"),
   heroDescription: document.querySelector("#heroDescription"),
   heroButton: document.querySelector("#heroButton"),
+  heroGoogleCalendarLink: document.querySelector("#heroGoogleCalendarLink"),
+  heroMicrosoftCalendarLink: document.querySelector("#heroMicrosoftCalendarLink"),
+  heroAppleCalendarLink: document.querySelector("#heroAppleCalendarLink"),
   heroProgressFill: document.querySelector("#heroProgressFill"),
   heroProgressDots: document.querySelector("#heroProgressDots"),
   heroUpcoming: document.querySelector("#heroUpcoming"),
@@ -77,6 +80,9 @@ const els = {
   dialogDate: document.querySelector("#dialogDate"),
   dialogTitle: document.querySelector("#dialogTitle"),
   dialogTeamappLink: document.querySelector("#dialogTeamappLink"),
+  dialogGoogleCalendarLink: document.querySelector("#dialogGoogleCalendarLink"),
+  dialogMicrosoftCalendarLink: document.querySelector("#dialogMicrosoftCalendarLink"),
+  dialogAppleCalendarLink: document.querySelector("#dialogAppleCalendarLink"),
   dialogDescription: document.querySelector("#dialogDescription"),
   hoverCard: document.querySelector("#hoverCard"),
 };
@@ -384,6 +390,194 @@ function teamappUrl(event) {
   return `https://muuc.teamapp.com/clubs/132307/events/${event.event_id}`;
 }
 
+function parseTimeParts(value) {
+  if (!value) return null;
+  const [hour, minute = "0"] = String(value).split(":").map(Number);
+  if (!Number.isFinite(hour) || !Number.isFinite(minute)) return null;
+  return { hour, minute };
+}
+
+function eventCalendarTimes(event) {
+  const startDate = parseDate(event.start_date || event.date);
+  const endDate = parseDate(event.end_date || event.start_date || event.date);
+  const startTime = parseTimeParts(event.start_time);
+  const endTime = parseTimeParts(event.end_time);
+  const isAllDay = !startTime || (!endTime && startTime.hour === 0 && startTime.minute === 0);
+
+  if (isAllDay) {
+    const exclusiveEnd = new Date(endDate);
+    exclusiveEnd.setDate(exclusiveEnd.getDate() + 1);
+    return { allDay: true, start: startDate, end: exclusiveEnd };
+  }
+
+  const start = new Date(startDate);
+  start.setHours(startTime.hour, startTime.minute, 0, 0);
+  const end = new Date(endDate);
+  if (endTime) {
+    end.setHours(endTime.hour, endTime.minute, 0, 0);
+  } else {
+    end.setTime(start.getTime() + 60 * 60 * 1000);
+  }
+  if (end <= start) end.setTime(start.getTime() + 60 * 60 * 1000);
+  return { allDay: false, start, end };
+}
+
+function calendarDate(value) {
+  return [
+    value.getFullYear(),
+    String(value.getMonth() + 1).padStart(2, "0"),
+    String(value.getDate()).padStart(2, "0"),
+  ].join("");
+}
+
+function calendarDateTimeUtc(value) {
+  return value.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+}
+
+function icsEscape(value) {
+  return String(value || "")
+    .replace(/\\/g, "\\\\")
+    .replace(/\n/g, "\\n")
+    .replace(/,/g, "\\,")
+    .replace(/;/g, "\\;");
+}
+
+function eventCalendarDetails(event) {
+  const title = sanitizeSensitiveText(event.event_name);
+  const url = teamappUrl(event);
+  const description = [descriptionSummary(event, 500), url].filter(Boolean).join("\n\n");
+  return { title, description, url };
+}
+
+function calendarActionFilename(event) {
+  return `${sanitizeSensitiveText(event.event_name || "muuc-event")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "") || "muuc-event"}.ics`;
+}
+
+function googleCalendarUrl(event) {
+  const { allDay, start, end } = eventCalendarTimes(event);
+  const { title, description } = eventCalendarDetails(event);
+  const dates = allDay
+    ? `${calendarDate(start)}/${calendarDate(end)}`
+    : `${calendarDateTimeUtc(start)}/${calendarDateTimeUtc(end)}`;
+  const params = new URLSearchParams({
+    action: "TEMPLATE",
+    text: title,
+    dates,
+    details: description,
+  });
+  return `https://calendar.google.com/calendar/render?${params}`;
+}
+
+function microsoftCalendarUrl(event) {
+  const { allDay, start, end } = eventCalendarTimes(event);
+  const { title, description } = eventCalendarDetails(event);
+  const params = new URLSearchParams({
+    path: "/calendar/action/compose",
+    rru: "addevent",
+    subject: title,
+    body: description,
+    startdt: start.toISOString(),
+    enddt: end.toISOString(),
+    allday: String(allDay),
+  });
+  return `https://outlook.live.com/calendar/0/deeplink/compose?${params}`;
+}
+
+function appleCalendarDataUrl(event) {
+  const { allDay, start, end } = eventCalendarTimes(event);
+  const { title, description, url } = eventCalendarDetails(event);
+  const startLine = allDay ? `DTSTART;VALUE=DATE:${calendarDate(start)}` : `DTSTART:${calendarDateTimeUtc(start)}`;
+  const endLine = allDay ? `DTEND;VALUE=DATE:${calendarDate(end)}` : `DTEND:${calendarDateTimeUtc(end)}`;
+  const lines = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//MUUC//Events Calendar//EN",
+    "BEGIN:VEVENT",
+    `UID:${event.event_id || crypto.randomUUID()}@muuc-events`,
+    `DTSTAMP:${calendarDateTimeUtc(new Date())}`,
+    startLine,
+    endLine,
+    `SUMMARY:${icsEscape(title)}`,
+    `DESCRIPTION:${icsEscape(description)}`,
+    url ? `URL:${icsEscape(url)}` : "",
+    "END:VEVENT",
+    "END:VCALENDAR",
+  ].filter(Boolean);
+  return `data:text/calendar;charset=utf-8,${encodeURIComponent(lines.join("\r\n"))}`;
+}
+
+function makeCalendarActionLinks(event) {
+  return {
+    google: googleCalendarUrl(event),
+    microsoft: microsoftCalendarUrl(event),
+    apple: appleCalendarDataUrl(event),
+    appleDownload: calendarActionFilename(event),
+  };
+}
+
+function setCalendarActionLinks(event) {
+  const links = makeCalendarActionLinks(event);
+  els.dialogGoogleCalendarLink.href = links.google;
+  els.dialogMicrosoftCalendarLink.href = links.microsoft;
+  els.dialogAppleCalendarLink.href = links.apple;
+  els.dialogAppleCalendarLink.download = links.appleDownload;
+  els.dialogGoogleCalendarLink.style.display = "inline-flex";
+  els.dialogMicrosoftCalendarLink.style.display = "inline-flex";
+  els.dialogAppleCalendarLink.style.display = "inline-flex";
+}
+
+function setHeroCalendarActionLinks(event) {
+  if (!event) {
+    els.heroGoogleCalendarLink.removeAttribute("href");
+    els.heroMicrosoftCalendarLink.removeAttribute("href");
+    els.heroAppleCalendarLink.removeAttribute("href");
+    els.heroGoogleCalendarLink.style.display = "none";
+    els.heroMicrosoftCalendarLink.style.display = "none";
+    els.heroAppleCalendarLink.style.display = "none";
+    return;
+  }
+
+  const links = makeCalendarActionLinks(event);
+  els.heroGoogleCalendarLink.href = links.google;
+  els.heroMicrosoftCalendarLink.href = links.microsoft;
+  els.heroAppleCalendarLink.href = links.apple;
+  els.heroAppleCalendarLink.download = links.appleDownload;
+  els.heroGoogleCalendarLink.style.display = "inline-flex";
+  els.heroMicrosoftCalendarLink.style.display = "inline-flex";
+  els.heroAppleCalendarLink.style.display = "inline-flex";
+}
+
+function createHeroEventCalendarLinks(event) {
+  const links = makeCalendarActionLinks(event);
+  const fragment = document.createDocumentFragment();
+
+  const google = document.createElement("a");
+  google.href = links.google;
+  google.target = "_blank";
+  google.rel = "noopener";
+  google.className = "dialog-action-link hero-event-action-link";
+  google.textContent = "Google";
+
+  const microsoft = document.createElement("a");
+  microsoft.href = links.microsoft;
+  microsoft.target = "_blank";
+  microsoft.rel = "noopener";
+  microsoft.className = "dialog-action-link hero-event-action-link";
+  microsoft.textContent = "Microsoft";
+
+  const apple = document.createElement("a");
+  apple.href = links.apple;
+  apple.download = links.appleDownload;
+  apple.className = "dialog-action-link hero-event-action-link";
+  apple.textContent = "Apple";
+
+  fragment.append(google, microsoft, apple);
+  return fragment;
+}
+
 function hasCustomImage(event) {
   return Boolean(event.image_data_url || event.image_url);
 }
@@ -526,6 +720,7 @@ function renderHero() {
     els.heroDate.textContent = "";
     els.heroDescription.textContent = "";
     els.heroButton.disabled = true;
+    setHeroCalendarActionLinks(null);
     return;
   }
 
@@ -540,6 +735,7 @@ function renderHero() {
   els.heroDescription.textContent = descriptionSummary(featured, 320);
   els.heroButton.disabled = false;
   restartHeroProgress();
+  setHeroCalendarActionLinks(featured);
 
   const fragment = document.createDocumentFragment();
   const dotFragment = document.createDocumentFragment();
@@ -553,6 +749,8 @@ function renderHero() {
 
   for (let index = 0; index < sideEvents.length; index += 1) {
     const event = sideEvents[index];
+    const item = document.createElement("div");
+    item.className = "hero-event-item";
     const button = document.createElement("button");
     button.type = "button";
     button.className = `hero-event${index === state.heroIndex ? " is-active" : ""}`;
@@ -565,7 +763,13 @@ function renderHero() {
       if (index >= 0) setHeroIndex(index);
       restartHeroCycle();
     });
-    fragment.append(button);
+
+    const links = document.createElement("div");
+    links.className = "hero-event-actions";
+    links.append(createHeroEventCalendarLinks(event));
+
+    item.append(button, links);
+    fragment.append(item);
   }
   els.heroUpcoming.append(fragment);
 }
@@ -624,6 +828,7 @@ async function crossfadeHeroImage(image, customImage) {
 function openEvent(event) {
   els.dialogDate.textContent = eventDateLabel(event);
   els.dialogTitle.textContent = sanitizeSensitiveText(event.event_name);
+  setCalendarActionLinks(event);
   const url = teamappUrl(event);
   if (url) {
     els.dialogTeamappLink.href = url;

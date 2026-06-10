@@ -6,9 +6,9 @@
     <meta name="theme-color" content="#1b27cb" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-title" content="MUUC Calendar" />
+    <meta name="apple-mobile-web-app-title" content="MUUC events" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <title>MUUC Calendar</title>
+    <title>MUUC events</title>
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="icon" type="image/png" href="assets/muuc-default.png" />
     <link rel="apple-touch-icon" href="assets/muuc-default.png" />
@@ -42,7 +42,14 @@
         <h2 id="heroTitle">Loading events…</h2>
         <p id="heroDate" class="hero-date"></p>
         <p id="heroDescription" class="hero-description"></p>
-        <button type="button" id="heroButton" class="hero-button">View event</button>
+        <div class="hero-actions">
+          <button type="button" id="heroButton" class="hero-button">View event</button>
+          <div class="hero-action-links">
+            <a id="heroGoogleCalendarLink" class="hero-action-link" href="#" target="_blank" rel="noopener">Google</a>
+            <a id="heroMicrosoftCalendarLink" class="hero-action-link" href="#" target="_blank" rel="noopener">Microsoft</a>
+            <a id="heroAppleCalendarLink" class="hero-action-link" href="#" download="muuc-event.ics">Apple</a>
+          </div>
+        </div>
       </div>
       <div class="hero-progress" aria-hidden="true">
         <div class="hero-progress-track">
@@ -82,7 +89,12 @@
       <img id="dialogImage" alt="" />
       <p id="dialogDate" class="eyebrow"></p>
       <h2 id="dialogTitle"></h2>
-      <a id="dialogTeamappLink" class="teamapp-link" href="#" target="_blank" rel="noopener">Open event</a>
+      <div class="dialog-actions">
+        <a id="dialogTeamappLink" class="dialog-action-link" href="#" target="_blank" rel="noopener">Open event</a>
+        <a id="dialogGoogleCalendarLink" class="dialog-action-link" href="#" target="_blank" rel="noopener">Google</a>
+        <a id="dialogMicrosoftCalendarLink" class="dialog-action-link" href="#" target="_blank" rel="noopener">Microsoft</a>
+        <a id="dialogAppleCalendarLink" class="dialog-action-link" href="#" download="muuc-event.ics">Apple</a>
+      </div>
       <div id="dialogDescription" class="structured-description"></div>
     </dialog>
 
