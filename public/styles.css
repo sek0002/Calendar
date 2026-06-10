@@ -876,8 +876,33 @@ dialog h2 {
   }
 
   .app-header {
-    align-items: start;
-    flex-direction: column;
+    align-items: center;
+    flex-direction: row;
+    gap: 10px;
+  }
+
+  .site-logo {
+    flex: 0 0 auto;
+    align-self: center;
+  }
+
+  .site-logo img {
+    height: 36px;
+  }
+
+  .controls {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .controls::-webkit-scrollbar {
+    display: none;
+  }
+
+  #monthLabel {
+    min-width: 112px;
   }
 
   .layout {
