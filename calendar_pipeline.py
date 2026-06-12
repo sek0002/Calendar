@@ -43,9 +43,23 @@ PHONE_RE = re.compile(r"(?:\+?\d[\d\s()./\-]{7,}\d)")
 HIDDEN_FIELD_RE = re.compile(r"leader\s*phone|secondary\s*number", re.I)
 HEALTH_SAFETY_RE = re.compile(r"\bhealth\b.*\bsafety\b", re.I)
 NEXT_SECTION_RE = re.compile(
-    r"^(trip organiser checklist|trip info|trip details|dive sites\s*/\s*itinerary|participation requirements|gear hire policy)\b",
+    r"^(trip organiser checklist|trip organizer checklist|trip organiser check list|trip info|trip details|dive sites\s*/\s*itinerary|participation requirements|gear hire policy|trip organiser checklist)\b",
     re.I,
 )
+KNOWN_SECTION_TITLES = (
+    "trip organiser checklist",
+    "trip organizer checklist",
+    "trip organiser check list",
+    "trip info",
+    "trip details",
+    "dive sites / itinerary",
+    "itinerary",
+    "participation requirements",
+    "gear hire policy",
+)
+SECTION_HEADER_RE = re.compile(r"^\*{1,2}\s*(.*?)\s*\*{1,2}$")
+HEADING_FIELD_RE = re.compile(r"\*\*([^*]+)\*\*\s*:\s*(.*)")
+FIELD_RE = re.compile(r"(?i)^\s*([A-Za-z][\w ./'&()-]+?)\s*:\s*(.+?)\s*$")
 
 
 def utc_now() -> str:
@@ -184,6 +198,26 @@ def is_divider_line(line: str) -> bool:
     return bool(cleaned) and all(char in {"-", "—", "–", "―", "_", " "} for char in cleaned) and len(cleaned) >= 2
 
 
+def normalize_section_title(value: str) -> str:
+    cleaned = re.sub(r"^\*{1,3}\s*|\s*\*{1,3}$", "", value.strip())
+    cleaned = re.sub(r"^#+\s*", "", cleaned)
+    return cleaned.strip(" :")
+
+
+def is_known_section_title(value: str) -> bool:
+    title = normalize_section_title(value).lower()
+    return title in KNOWN_SECTION_TITLES
+
+
+def extract_section_title(line: str) -> str | None:
+    if is_known_section_title(line):
+        return normalize_section_title(line)
+    markdown = SECTION_HEADER_RE.fullmatch(line)
+    if markdown and is_known_section_title(markdown.group(1)):
+        return normalize_section_title(markdown.group(1))
+    return None
+
+
 def parse_description(description: str) -> list[dict[str, Any]]:
     sections: list[dict[str, Any]] = []
     current: dict[str, Any] | None = None
@@ -203,8 +237,11 @@ def parse_description(description: str) -> list[dict[str, Any]]:
         if is_divider_line(line):
             continue
 
-        heading_match = re.fullmatch(r"\*\*([^*]+)\*\*", line)
-        field_match = re.fullmatch(r"\*\*([^*]+)\*\*\s*:\s*(.*)", line)
+        section_title = extract_section_title(line)
+        heading_match = section_title is not None
+        field_match = HEADING_FIELD_RE.fullmatch(line)
+        if not field_match and ":" in line and not heading_match:
+            field_match = FIELD_RE.fullmatch(line) if ":" in line else None
 
         if field_match:
             section = ensure_section(pending_heading or "Details")
@@ -214,8 +251,16 @@ def parse_description(description: str) -> list[dict[str, Any]]:
             section["fields"].append({"label": label, "value": value})
             continue
 
-        if heading_match and len(heading_match.group(1).strip()) <= 60:
-            title = heading_match.group(1).strip()
+        if heading_match:
+            title = section_title
+            if title is None:
+                continue
+            title = normalize_section_title(title)
+            if len(title) > 60:
+                section = ensure_section(pending_heading or "Details")
+                pending_heading = None
+                section["body"].append(re.sub(r"\*\*([^*]+)\*\*", r"\1", line))
+                continue
             current = {"title": title, "body": [], "fields": []}
             sections.append(current)
             pending_heading = title
